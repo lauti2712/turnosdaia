@@ -39,7 +39,6 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.nombre.trim() || !form.apellido.trim()) return
     setGuardando(true)
     try {
       await onSave({
@@ -65,7 +64,6 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
                   value={form.nombre}
                   onChange={(e) => setCampo('nombre', e.target.value)}
                   autoFocus
-                  required
                 />
               </div>
               <div className="field">
@@ -73,7 +71,6 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
                 <input
                   value={form.apellido}
                   onChange={(e) => setCampo('apellido', e.target.value)}
-                  required
                 />
               </div>
             </div>
@@ -96,7 +93,6 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
                   step="0.01"
                   value={form.montoMensual}
                   onChange={(e) => setCampo('montoMensual', e.target.value)}
-                  required
                 />
               </div>
             </div>
@@ -106,7 +102,6 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
                 type="date"
                 value={form.fechaInicio}
                 onChange={(e) => setCampo('fechaInicio', e.target.value)}
-                required
               />
             </div>
 

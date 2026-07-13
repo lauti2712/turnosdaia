@@ -1,20 +1,31 @@
 import { useEffect, useState } from 'react'
-import { subscribeTurnos, crearTurno, actualizarTurno } from '../data/turnos'
-import { subscribeAlumnos } from '../data/alumnos'
+import { DIAS, subscribeTurnos, crearTurno, actualizarTurno } from '../data/turnos'
+import { subscribeAlumnos, crearAlumno } from '../data/alumnos'
 import TurnoCard from '../components/TurnoCard'
 import TurnoModal from '../components/TurnoModal'
+import AlumnoModal from '../components/AlumnoModal'
 
 export default function TurnosPage() {
   const [turnos, setTurnos] = useState([])
   const [alumnos, setAlumnos] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [modalAlumnoAbierto, setModalAlumnoAbierto] = useState(false)
 
   useEffect(() => subscribeTurnos(setTurnos), [])
   useEffect(() => subscribeAlumnos(setAlumnos), [])
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
   const alumnosActivos = alumnos.filter((a) => a.activo !== false)
+
+  const diasAsignadosPorAlumno = {}
+  for (const turno of turnos) {
+    for (const dia of DIAS) {
+      for (const alumnoId of turno.dias[dia] || []) {
+        diasAsignadosPorAlumno[alumnoId] = (diasAsignadosPorAlumno[alumnoId] || 0) + 1
+      }
+    }
+  }
 
   async function handleSave(datos) {
     if (editando) {
@@ -42,9 +53,14 @@ export default function TurnosPage() {
     <div>
       <div className="page-title">
         <h2>Turnos</h2>
-        <button className="btn btn-primary" onClick={abrirNuevo}>
-          + Nuevo turno
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary" onClick={() => setModalAlumnoAbierto(true)}>
+            + Nuevo alumno
+          </button>
+          <button className="btn btn-primary" onClick={abrirNuevo}>
+            + Nuevo turno
+          </button>
+        </div>
       </div>
 
       {turnos.length === 0 ? (
@@ -58,6 +74,7 @@ export default function TurnosPage() {
             turno={turno}
             alumnosPorId={alumnosPorId}
             alumnosActivos={alumnosActivos}
+            diasAsignadosPorAlumno={diasAsignadosPorAlumno}
             onEditar={abrirEditar}
           />
         ))
@@ -65,6 +82,10 @@ export default function TurnosPage() {
 
       {modalAbierto && (
         <TurnoModal turno={editando} onSave={handleSave} onClose={() => setModalAbierto(false)} />
+      )}
+
+      {modalAlumnoAbierto && (
+        <AlumnoModal onSave={crearAlumno} onClose={() => setModalAlumnoAbierto(false)} />
       )}
     </div>
   )

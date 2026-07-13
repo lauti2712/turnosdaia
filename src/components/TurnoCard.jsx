@@ -31,7 +31,13 @@ function AsignarSelect({ opciones, onAsignar }) {
   )
 }
 
-export default function TurnoCard({ turno, alumnosPorId, alumnosActivos, onEditar }) {
+export default function TurnoCard({
+  turno,
+  alumnosPorId,
+  alumnosActivos,
+  diasAsignadosPorAlumno,
+  onEditar,
+}) {
   async function handleEliminarTurno() {
     if (confirm(`¿Eliminar el turno "${turno.nombre}"?`)) {
       await eliminarTurno(turno.id)
@@ -68,9 +74,24 @@ export default function TurnoCard({ turno, alumnosPorId, alumnosActivos, onEdita
               <div className="turnos-grid-col-header">{DIAS_LABEL[dia]}</div>
               {asignados.map((alumnoId) => {
                 const alumno = alumnosPorId[alumnoId]
+                const asignadosSemana = diasAsignadosPorAlumno[alumnoId] || 0
+                const objetivo = alumno?.diasPorSemana || 0
                 return (
                   <div className="turnos-grid-cell" key={alumnoId}>
-                    <span>{alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)'}</span>
+                    <span>
+                      {alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)'}
+                      {alumno && (
+                        <span
+                          className="muted"
+                          style={{
+                            marginLeft: 4,
+                            color: asignadosSemana > objetivo ? 'var(--danger)' : undefined,
+                          }}
+                        >
+                          ({asignadosSemana}/{objetivo})
+                        </span>
+                      )}
+                    </span>
                     <button
                       className="icon-btn"
                       aria-label="Quitar"
