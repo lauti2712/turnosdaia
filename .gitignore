@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# scripts de migración puntuales, no reutilizables
+scripts/migrar-a-produccion.mjs
+
+.firebase/

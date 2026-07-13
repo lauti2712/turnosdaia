@@ -38,18 +38,23 @@ La deuda de cada alumno **no se guarda como documento mensual**: se calcula
 al vuelo como `mesesTranscurridos(fechaInicio) × montoMensual`, y el saldo es
 esa deuda menos la suma de pagos (± ajustes). Ver `src/data/movimientos.js`.
 
-## Pasar a producción
+## Producción
 
-Por ahora todo corre contra el emulador. Para tener la app accesible desde
-cualquier dispositivo (no solo esta compu) hace falta:
+- **App:** https://turnosdaia.web.app
+- **Proyecto Firebase:** `turnosdaia` (alias `production` en `.firebaserc`),
+  Firestore en `southamerica-east1`.
+- **Repo:** https://github.com/lauti2712/turnosdaia
 
-1. Crear un proyecto real en https://console.firebase.google.com (plan
-   gratuito Spark alcanza).
-2. Reemplazar `firebaseConfig` en `src/firebase.js` con las credenciales
-   reales del proyecto, y sacar el `connectFirestoreEmulator` (o dejarlo
-   condicionado a `import.meta.env.DEV` como ya está).
-3. `firebase use --add` para apuntar `.firebaserc` al proyecto real.
-4. `npm run build && firebase deploy`.
+`src/firebase.js` usa la config del proyecto demo cuando `import.meta.env.DEV`
+(desarrollo local contra el emulador) y la config real de `turnosdaia` en
+build de producción.
+
+Para deployar cambios:
+
+```bash
+npm run build
+firebase deploy --project turnosdaia
+```
 
 **Importante — no hay login.** Las reglas de Firestore (`firestore.rules`)
 permiten leer y escribir a cualquiera que tenga la URL de la app. Es válido
