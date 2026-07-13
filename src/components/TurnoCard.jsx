@@ -51,6 +51,9 @@ export default function TurnoCard({
   const diasVisibles =
     ocultarDiasVacios && diasConAlumnos.length > 0 ? diasConAlumnos : DIAS
 
+  const maxOcupacion = Math.max(0, ...DIAS.map((dia) => (turno.dias[dia] || []).length))
+  const cuposDisponibles = Math.max(turno.cupoMaximo - maxOcupacion, 0)
+
   return (
     <div className="card">
       <div className="page-title" style={{ marginBottom: plegado ? 0 : 10 }}>
@@ -67,6 +70,15 @@ export default function TurnoCard({
             <strong>{turno.nombre}</strong>
             {turno.horario && <span className="muted"> · {turno.horario}</span>}
             <span className="muted"> · cupo {turno.cupoMaximo}</span>
+            {cuposDisponibles > 0 ? (
+              <span className="badge badge-success" style={{ marginLeft: 8 }}>
+                {cuposDisponibles} {cuposDisponibles === 1 ? 'libre' : 'libres'}
+              </span>
+            ) : (
+              <span className="badge badge-danger" style={{ marginLeft: 8 }}>
+                Completo
+              </span>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4 }}>

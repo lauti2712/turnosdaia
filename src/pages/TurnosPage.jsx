@@ -4,6 +4,7 @@ import { subscribeAlumnos, crearAlumno } from '../data/alumnos'
 import TurnoCard from '../components/TurnoCard'
 import TurnoModal from '../components/TurnoModal'
 import AlumnoModal from '../components/AlumnoModal'
+import DisponibilidadGrid from '../components/DisponibilidadGrid'
 
 export default function TurnosPage() {
   const [turnos, setTurnos] = useState([])
@@ -12,6 +13,7 @@ export default function TurnosPage() {
   const [editando, setEditando] = useState(null)
   const [modalAlumnoAbierto, setModalAlumnoAbierto] = useState(false)
   const [ocultarDiasVacios, setOcultarDiasVacios] = useState(false)
+  const [mostrarDisponibilidad, setMostrarDisponibilidad] = useState(true)
 
   useEffect(() => subscribeTurnos(setTurnos), [])
   useEffect(() => subscribeAlumnos(setAlumnos), [])
@@ -72,6 +74,25 @@ export default function TurnosPage() {
           </button>
         </div>
       </div>
+
+      {turnos.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div className="page-title" style={{ marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                className="icon-btn"
+                aria-label={mostrarDisponibilidad ? 'Ocultar disponibilidad' : 'Mostrar disponibilidad'}
+                onClick={() => setMostrarDisponibilidad((v) => !v)}
+                style={{ fontSize: '0.7rem' }}
+              >
+                {mostrarDisponibilidad ? '▼' : '▶'}
+              </button>
+              <strong>Disponibilidad</strong>
+            </div>
+          </div>
+          {mostrarDisponibilidad && <DisponibilidadGrid turnos={turnos} />}
+        </div>
+      )}
 
       {turnos.length === 0 ? (
         <div className="card">

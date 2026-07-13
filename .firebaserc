@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "demo-pilates-yoga"
-  }
+    "default": "demo-pilates-yoga",
+    "production": "turnosdaia"
+  },
+  "targets": {},
+  "etags": {}
 }
