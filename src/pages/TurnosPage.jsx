@@ -11,6 +11,7 @@ export default function TurnosPage() {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [modalAlumnoAbierto, setModalAlumnoAbierto] = useState(false)
+  const [ocultarDiasVacios, setOcultarDiasVacios] = useState(false)
 
   useEffect(() => subscribeTurnos(setTurnos), [])
   useEffect(() => subscribeAlumnos(setAlumnos), [])
@@ -53,7 +54,16 @@ export default function TurnosPage() {
     <div>
       <div className="page-title">
         <h2>Turnos</h2>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              style={{ width: 'auto' }}
+              checked={ocultarDiasVacios}
+              onChange={(e) => setOcultarDiasVacios(e.target.checked)}
+            />
+            Ocultar días sin alumnos
+          </label>
           <button className="btn btn-primary" onClick={() => setModalAlumnoAbierto(true)}>
             + Nuevo alumno
           </button>
@@ -75,6 +85,7 @@ export default function TurnosPage() {
             alumnosPorId={alumnosPorId}
             alumnosActivos={alumnosActivos}
             diasAsignadosPorAlumno={diasAsignadosPorAlumno}
+            ocultarDiasVacios={ocultarDiasVacios}
             onEditar={abrirEditar}
           />
         ))

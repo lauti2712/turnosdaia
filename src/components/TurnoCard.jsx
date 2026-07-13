@@ -36,21 +36,38 @@ export default function TurnoCard({
   alumnosPorId,
   alumnosActivos,
   diasAsignadosPorAlumno,
+  ocultarDiasVacios,
   onEditar,
 }) {
+  const [plegado, setPlegado] = useState(false)
+
   async function handleEliminarTurno() {
     if (confirm(`¿Eliminar el turno "${turno.nombre}"?`)) {
       await eliminarTurno(turno.id)
     }
   }
 
+  const diasConAlumnos = DIAS.filter((dia) => (turno.dias[dia] || []).length > 0)
+  const diasVisibles =
+    ocultarDiasVacios && diasConAlumnos.length > 0 ? diasConAlumnos : DIAS
+
   return (
     <div className="card">
-      <div className="page-title" style={{ marginBottom: 10 }}>
-        <div>
-          <strong>{turno.nombre}</strong>
-          {turno.horario && <span className="muted"> · {turno.horario}</span>}
-          <span className="muted"> · cupo {turno.cupoMaximo}</span>
+      <div className="page-title" style={{ marginBottom: plegado ? 0 : 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            className="icon-btn"
+            aria-label={plegado ? 'Desplegar' : 'Plegar'}
+            onClick={() => setPlegado((p) => !p)}
+            style={{ fontSize: '0.7rem' }}
+          >
+            {plegado ? '▶' : '▼'}
+          </button>
+          <div>
+            <strong>{turno.nombre}</strong>
+            {turno.horario && <span className="muted"> · {turno.horario}</span>}
+            <span className="muted"> · cupo {turno.cupoMaximo}</span>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
           <button className="btn btn-sm" onClick={() => onEditar(turno)}>
@@ -62,8 +79,9 @@ export default function TurnoCard({
         </div>
       </div>
 
-      <div className="turnos-grid">
-        {DIAS.map((dia) => {
+      {!plegado && (
+      <div className="turnos-grid" style={{ gridTemplateColumns: `repeat(${diasVisibles.length}, 1fr)` }}>
+        {diasVisibles.map((dia) => {
           const asignados = turno.dias[dia] || []
           const hayCupo = asignados.length < turno.cupoMaximo
           const idsAsignados = new Set(asignados)
@@ -114,6 +132,7 @@ export default function TurnoCard({
           )
         })}
       </div>
+      )}
     </div>
   )
 }
