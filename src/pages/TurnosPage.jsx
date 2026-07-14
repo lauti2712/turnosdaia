@@ -32,11 +32,7 @@ export default function TurnosPage() {
 
   async function handleSave(datos) {
     if (editando) {
-      await actualizarTurno(editando.id, {
-        nombre: datos.nombre,
-        horario: datos.horario,
-        cupoMaximo: Number(datos.cupoMaximo) || 1,
-      })
+      await actualizarTurno(editando.id, datos)
     } else {
       await crearTurno(datos)
     }

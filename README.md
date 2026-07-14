@@ -31,7 +31,11 @@ emulador — se pierden al reiniciarlo (a menos que uses `--export-on-exit`).
 ## Modelo de datos (Firestore)
 
 - **`alumnos`**: `{ nombre, apellido, diasPorSemana, montoMensual, fechaInicio, extra: [{clave, valor}], activo }`
-- **`turnos`**: `{ nombre, horario, cupoMaximo, dias: { lunes: [alumnoId], martes: [...], miercoles: [...], jueves: [...], viernes: [...] } }`
+- **`turnos`**: `{ actividad, diasActivos: ['lunes', ...], horario, cupoMaximo, nombre, dias: { lunes: [alumnoId], martes: [...], miercoles: [...], jueves: [...], viernes: [...] } }`
+  `nombre` se compone automáticamente (`construirNombreTurno` en `src/data/turnos.js`) como
+  `actividad + iniciales de diasActivos (Miércoles = "Mi") + horario`, ej. `"PILATES LMiV 8:30"`.
+  `diasActivos` son los días en que se dicta el turno (elegidos al crear/editar); `dias` es la
+  asignación real de alumnos por día, independiente de `diasActivos`.
 - **`movimientos`**: `{ alumnoId, tipo: 'pago'|'ajuste', monto, fecha, formaPago?, descripcion, ts }`
 
 La deuda de cada alumno **no se guarda como documento mensual**: se calcula

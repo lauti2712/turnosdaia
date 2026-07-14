@@ -22,30 +22,52 @@ export const DIAS_LABEL = {
   jueves: 'Jueves',
   viernes: 'Viernes',
 }
+export const DIAS_INICIAL = {
+  lunes: 'L',
+  martes: 'M',
+  miercoles: 'Mi',
+  jueves: 'J',
+  viernes: 'V',
+}
 
 function diasVacios() {
   return Object.fromEntries(DIAS.map((d) => [d, []]))
 }
 
+export function construirNombreTurno({ actividad, diasActivos, horario }) {
+  const iniciales = DIAS.filter((d) => (diasActivos || []).includes(d))
+    .map((d) => DIAS_INICIAL[d])
+    .join('')
+  return [actividad, iniciales, horario].filter(Boolean).join(' ')
+}
+
 export function subscribeTurnos(callback) {
   const q = query(turnosRef, orderBy('nombre'))
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, dias: diasVacios(), ...d.data() })))
+    callback(snap.docs.map((d) => ({ id: d.id, dias: diasVacios(), diasActivos: [], ...d.data() })))
   })
 }
 
-export function crearTurno({ nombre, horario, cupoMaximo }) {
+export function crearTurno({ actividad, diasActivos, horario, cupoMaximo }) {
   return addDoc(turnosRef, {
-    nombre,
+    actividad: actividad || '',
+    diasActivos: diasActivos || [],
     horario: horario || '',
     cupoMaximo: Number(cupoMaximo) || 1,
+    nombre: construirNombreTurno({ actividad, diasActivos, horario }),
     dias: diasVacios(),
     creadoTs: Date.now(),
   })
 }
 
-export function actualizarTurno(id, cambios) {
-  return updateDoc(doc(db, 'turnos', id), cambios)
+export function actualizarTurno(id, { actividad, diasActivos, horario, cupoMaximo }) {
+  return updateDoc(doc(db, 'turnos', id), {
+    actividad: actividad || '',
+    diasActivos: diasActivos || [],
+    horario: horario || '',
+    cupoMaximo: Number(cupoMaximo) || 1,
+    nombre: construirNombreTurno({ actividad, diasActivos, horario }),
+  })
 }
 
 export function eliminarTurno(id) {

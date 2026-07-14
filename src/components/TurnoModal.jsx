@@ -1,18 +1,31 @@
 import { useState } from 'react'
+import { DIAS, DIAS_LABEL, construirNombreTurno } from '../data/turnos'
 
-const TURNO_VACIO = { nombre: '', horario: '', cupoMaximo: 6 }
+const TURNO_VACIO = { actividad: '', horario: '', cupoMaximo: 6, diasActivos: [] }
 
 export default function TurnoModal({ turno, onSave, onClose }) {
-  const [form, setForm] = useState(turno ? { ...TURNO_VACIO, ...turno } : TURNO_VACIO)
+  const [form, setForm] = useState(
+    turno
+      ? { ...TURNO_VACIO, ...turno, diasActivos: turno.diasActivos ? [...turno.diasActivos] : [] }
+      : TURNO_VACIO,
+  )
   const [guardando, setGuardando] = useState(false)
 
   function setCampo(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }))
   }
 
+  function toggleDia(dia) {
+    setForm((f) => ({
+      ...f,
+      diasActivos: f.diasActivos.includes(dia)
+        ? f.diasActivos.filter((d) => d !== dia)
+        : [...f.diasActivos, dia],
+    }))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.nombre.trim()) return
     setGuardando(true)
     try {
       await onSave(form)
@@ -22,6 +35,8 @@ export default function TurnoModal({ turno, onSave, onClose }) {
     }
   }
 
+  const previewNombre = construirNombreTurno(form)
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -29,18 +44,38 @@ export default function TurnoModal({ turno, onSave, onClose }) {
         <form onSubmit={handleSubmit}>
           <div className="grid" style={{ gap: 10 }}>
             <div className="field">
-              <label>Nombre del turno</label>
+              <label>Actividad</label>
               <input
-                value={form.nombre}
-                onChange={(e) => setCampo('nombre', e.target.value)}
-                placeholder="Ej: Mañana 9hs"
+                value={form.actividad}
+                onChange={(e) => setCampo('actividad', e.target.value)}
+                placeholder="Pilates, Yoga..."
                 autoFocus
-                required
               />
             </div>
+
+            <div className="field">
+              <label>Días</label>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {DIAS.map((dia) => (
+                  <label
+                    key={dia}
+                    style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.85rem' }}
+                  >
+                    <input
+                      type="checkbox"
+                      style={{ width: 'auto' }}
+                      checked={form.diasActivos.includes(dia)}
+                      onChange={() => toggleDia(dia)}
+                    />
+                    {DIAS_LABEL[dia]}
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="field">
-                <label>Horario (opcional)</label>
+                <label>Horario</label>
                 <input
                   value={form.horario}
                   onChange={(e) => setCampo('horario', e.target.value)}
@@ -58,6 +93,12 @@ export default function TurnoModal({ turno, onSave, onClose }) {
                 />
               </div>
             </div>
+
+            {previewNombre && (
+              <div className="muted" style={{ fontSize: '0.8rem' }}>
+                Nombre: <strong>{previewNombre}</strong>
+              </div>
+            )}
           </div>
 
           <div className="modal-actions">
