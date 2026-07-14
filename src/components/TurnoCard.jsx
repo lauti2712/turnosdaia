@@ -56,15 +56,24 @@ export default function TurnoCard({
   return (
     <div className="card">
       <div className="page-title" style={{ marginBottom: plegado ? 0 : 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            className="icon-btn"
-            aria-label={plegado ? 'Desplegar' : 'Plegar'}
-            onClick={() => setPlegado((p) => !p)}
-            style={{ fontSize: '0.7rem' }}
-          >
-            {plegado ? '▶' : '▼'}
-          </button>
+        <button
+          type="button"
+          onClick={() => setPlegado((p) => !p)}
+          aria-label={plegado ? 'Desplegar' : 'Plegar'}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            textAlign: 'left',
+            font: 'inherit',
+            color: 'inherit',
+          }}
+        >
+          <span style={{ fontSize: '0.7rem' }}>{plegado ? '▶' : '▼'}</span>
           <div>
             <strong>{turno.nombre}</strong>
             <span className="muted"> · cupo {turno.cupoMaximo}</span>
@@ -78,7 +87,7 @@ export default function TurnoCard({
               </span>
             )}
           </div>
-        </div>
+        </button>
         <div style={{ display: 'flex', gap: 4 }}>
           <button className="btn btn-sm" onClick={() => onEditar(turno)}>
             Editar

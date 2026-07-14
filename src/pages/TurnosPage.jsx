@@ -79,17 +79,26 @@ export default function TurnosPage() {
       {turnos.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <div className="page-title" style={{ marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                className="icon-btn"
-                aria-label={mostrarDisponibilidad ? 'Ocultar disponibilidad' : 'Mostrar disponibilidad'}
-                onClick={() => setMostrarDisponibilidad((v) => !v)}
-                style={{ fontSize: '0.7rem' }}
-              >
-                {mostrarDisponibilidad ? '▼' : '▶'}
-              </button>
+            <button
+              type="button"
+              onClick={() => setMostrarDisponibilidad((v) => !v)}
+              aria-label={mostrarDisponibilidad ? 'Ocultar disponibilidad' : 'Mostrar disponibilidad'}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                textAlign: 'left',
+                font: 'inherit',
+                color: 'inherit',
+              }}
+            >
+              <span style={{ fontSize: '0.7rem' }}>{mostrarDisponibilidad ? '▼' : '▶'}</span>
               <strong>Disponibilidad</strong>
-            </div>
+            </button>
           </div>
           {mostrarDisponibilidad && <DisponibilidadGrid turnos={turnos} />}
         </div>
