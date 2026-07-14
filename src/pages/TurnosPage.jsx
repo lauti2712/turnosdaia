@@ -6,6 +6,7 @@ import TurnoModal from '../components/TurnoModal'
 import AlumnoModal from '../components/AlumnoModal'
 import DisponibilidadGrid from '../components/DisponibilidadGrid'
 import NuevoPagoModal from '../components/NuevoPagoModal'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 export default function TurnosPage() {
   const [turnos, setTurnos] = useState([])
@@ -16,6 +17,7 @@ export default function TurnosPage() {
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
   const [ocultarDiasVacios, setOcultarDiasVacios] = useState(false)
   const [mostrarDisponibilidad, setMostrarDisponibilidad] = useState(true)
+  const isMobile = useIsMobile()
 
   useEffect(() => subscribeTurnos(setTurnos), [])
   useEffect(() => subscribeAlumnos(setAlumnos), [])
@@ -55,15 +57,17 @@ export default function TurnosPage() {
       <div className="page-title">
         <h2>Turnos</h2>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              style={{ width: 'auto' }}
-              checked={ocultarDiasVacios}
-              onChange={(e) => setOcultarDiasVacios(e.target.checked)}
-            />
-            Ocultar días sin alumnos
-          </label>
+          {!isMobile && (
+            <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                style={{ width: 'auto' }}
+                checked={ocultarDiasVacios}
+                onChange={(e) => setOcultarDiasVacios(e.target.checked)}
+              />
+              Ocultar días sin alumnos
+            </label>
+          )}
           <button className="btn btn-primary" onClick={() => setModalPagoAbierto(true)}>
             + Nuevo pago
           </button>
@@ -116,7 +120,7 @@ export default function TurnosPage() {
             alumnosPorId={alumnosPorId}
             alumnosActivos={alumnosActivos}
             diasAsignadosPorAlumno={diasAsignadosPorAlumno}
-            ocultarDiasVacios={ocultarDiasVacios}
+            ocultarDiasVacios={isMobile || ocultarDiasVacios}
             onEditar={abrirEditar}
           />
         ))

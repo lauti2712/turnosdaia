@@ -1,6 +1,8 @@
 import { DIAS, DIAS_LABEL, actualizarOrdenTurno } from '../data/turnos'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 export default function DisponibilidadGrid({ turnos }) {
+  const isMobile = useIsMobile()
   const filas = turnos
     .map((turno) => {
       const diasActivos = turno.diasActivos?.length > 0 ? turno.diasActivos : DIAS
@@ -40,7 +42,7 @@ export default function DisponibilidadGrid({ turnos }) {
       <table>
         <thead>
           <tr>
-            <th></th>
+            {!isMobile && <th></th>}
             <th>Turno</th>
             {DIAS.map((dia) => (
               <th key={dia}>{DIAS_LABEL[dia]}</th>
@@ -50,26 +52,28 @@ export default function DisponibilidadGrid({ turnos }) {
         <tbody>
           {filas.map(({ turno, disponiblesPorDia }, index) => (
             <tr key={turno.id}>
-              <td>
-                <div style={{ display: 'flex', gap: 2 }}>
-                  <button
-                    className="icon-btn"
-                    aria-label="Subir"
-                    disabled={index === 0}
-                    onClick={() => mover(index, -1)}
-                  >
-                    ▲
-                  </button>
-                  <button
-                    className="icon-btn"
-                    aria-label="Bajar"
-                    disabled={index === filas.length - 1}
-                    onClick={() => mover(index, 1)}
-                  >
-                    ▼
-                  </button>
-                </div>
-              </td>
+              {!isMobile && (
+                <td>
+                  <div style={{ display: 'flex', gap: 2 }}>
+                    <button
+                      className="icon-btn"
+                      aria-label="Subir"
+                      disabled={index === 0}
+                      onClick={() => mover(index, -1)}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      className="icon-btn"
+                      aria-label="Bajar"
+                      disabled={index === filas.length - 1}
+                      onClick={() => mover(index, 1)}
+                    >
+                      ▼
+                    </button>
+                  </div>
+                </td>
+              )}
               <td>{turno.nombre}</td>
               {DIAS.map((dia) => {
                 const disponibles = disponiblesPorDia[dia]
