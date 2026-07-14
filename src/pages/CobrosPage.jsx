@@ -20,14 +20,23 @@ export default function CobrosPage() {
 
   const activos = alumnos.filter((a) => a.activo !== false)
 
-  const filas = activos
-    .filter((a) => coincideBusqueda(a, busqueda))
-    .map((a) => {
-      const movsAlumno = movimientos.filter((m) => m.alumnoId === a.id)
-      return { alumno: a, saldo: calcularSaldo(a, movsAlumno) }
-    })
+  const filasCompletas = activos.map((a) => {
+    const movsAlumno = movimientos.filter((m) => m.alumnoId === a.id)
+    return { alumno: a, saldo: calcularSaldo(a, movsAlumno) }
+  })
+
+  const filas = filasCompletas
+    .filter((f) => coincideBusqueda(f.alumno, busqueda))
     .filter((f) => !soloDeudores || f.saldo > 0)
     .sort((a, b) => b.saldo - a.saldo)
+
+  const hoy = new Date()
+  const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
+  const totalCobradoMes = movimientos
+    .filter((m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mesActual))
+    .reduce((acc, m) => acc + m.monto, 0)
+
+  const totalAdeudado = filasCompletas.reduce((acc, f) => acc + Math.max(f.saldo, 0), 0)
 
   const seleccionado = activos.find((a) => a.id === seleccionadoId)
 
@@ -48,6 +57,21 @@ export default function CobrosPage() {
           <button className="btn btn-primary" onClick={() => setModalPagoAbierto(true)}>
             + Nuevo pago
           </button>
+        </div>
+      </div>
+
+      <div className="stats-row">
+        <div className="stat-tile">
+          <div className="stat-label">Cobrado este mes</div>
+          <div className="stat-value" style={{ color: 'var(--success)' }}>
+            {fmtMoney(totalCobradoMes)}
+          </div>
+        </div>
+        <div className="stat-tile">
+          <div className="stat-label">Adeudado total</div>
+          <div className="stat-value" style={{ color: 'var(--danger)' }}>
+            {fmtMoney(totalAdeudado)}
+          </div>
         </div>
       </div>
 
