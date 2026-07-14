@@ -10,7 +10,7 @@ import MovimientoForm from './MovimientoForm'
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
-export default function CtaCteDetalle({ alumno }) {
+export default function CtaCteDetalle({ alumno, sinTarjeta = false }) {
   const [movimientos, setMovimientos] = useState([])
 
   useEffect(() => subscribeMovimientos(alumno.id, setMovimientos), [alumno.id])
@@ -21,7 +21,7 @@ export default function CtaCteDetalle({ alumno }) {
   const pagado = movimientos.filter((m) => m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
 
   return (
-    <div className="card">
+    <div className={sinTarjeta ? '' : 'card'}>
       <div className="page-title" style={{ marginBottom: 10 }}>
         <h2 style={{ margin: 0 }}>
           {alumno.apellido}, {alumno.nombre}

@@ -323,6 +323,10 @@ th {
   overflow-y: auto;
 }
 
+.modal-lg {
+  max-width: 760px;
+}
+
 .modal h3 {
   margin-top: 0;
 }
@@ -347,4 +351,44 @@ th {
 .icon-btn:hover {
   background: var(--bg);
   color: var(--text);
+}
+
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 60;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.autocomplete-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.autocomplete-item:hover {
+  background: var(--bg);
+}
+
+.autocomplete-empty {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }

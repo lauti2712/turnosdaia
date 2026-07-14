@@ -50,3 +50,16 @@ export function archivarAlumno(id, activo) {
 export function eliminarAlumno(id) {
   return deleteDoc(doc(db, 'alumnos', id))
 }
+
+function normalizar(texto) {
+  return (texto || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+}
+
+export function coincideBusqueda(alumno, busqueda) {
+  const q = normalizar(busqueda).trim()
+  if (!q) return true
+  return normalizar(alumno.nombre).includes(q) || normalizar(alumno.apellido).includes(q)
+}

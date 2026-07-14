@@ -1,18 +1,15 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
+import AlumnoBuscador from './AlumnoBuscador'
 import MovimientoForm from './MovimientoForm'
 
 export default function NuevoPagoModal({ onClose }) {
   const [alumnos, setAlumnos] = useState([])
-  const [alumnoId, setAlumnoId] = useState('')
+  const [alumno, setAlumno] = useState(null)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
 
-  const activos = alumnos
-    .filter((a) => a.activo !== false)
-    .sort((a, b) => (a.apellido || '').localeCompare(b.apellido || ''))
-
-  const alumno = activos.find((a) => a.id === alumnoId)
+  const activos = alumnos.filter((a) => a.activo !== false)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -26,21 +23,34 @@ export default function NuevoPagoModal({ onClose }) {
 
         <div className="field" style={{ marginBottom: 14 }}>
           <label>Alumno</label>
-          <select value={alumnoId} onChange={(e) => setAlumnoId(e.target.value)} autoFocus>
-            <option value="">Elegir alumno...</option>
-            {activos.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.apellido}, {a.nombre}
-              </option>
-            ))}
-          </select>
+          {alumno ? (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: '8px 10px',
+              }}
+            >
+              <span>
+                {alumno.apellido}, {alumno.nombre}
+              </span>
+              <button type="button" className="btn btn-sm" onClick={() => setAlumno(null)}>
+                Cambiar
+              </button>
+            </div>
+          ) : (
+            <AlumnoBuscador alumnos={activos} onSeleccionar={setAlumno} autoFocus />
+          )}
         </div>
 
         {alumno ? (
           <MovimientoForm alumno={alumno} tipoInicial="pago" onGuardado={onClose} />
         ) : (
           <p className="muted" style={{ fontSize: '0.85rem' }}>
-            Elegí un alumno para cargar el pago.
+            Buscá y elegí un alumno para cargar el pago.
           </p>
         )}
       </div>

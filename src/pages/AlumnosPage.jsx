@@ -5,6 +5,7 @@ import {
   actualizarAlumno,
   archivarAlumno,
   eliminarAlumno,
+  coincideBusqueda,
 } from '../data/alumnos'
 import AlumnoModal from '../components/AlumnoModal'
 
@@ -16,6 +17,7 @@ export default function AlumnosPage() {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [mostrarInactivos, setMostrarInactivos] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
 
@@ -43,7 +45,9 @@ export default function AlumnosPage() {
     }
   }
 
-  const visibles = alumnos.filter((a) => mostrarInactivos || a.activo !== false)
+  const visibles = alumnos
+    .filter((a) => mostrarInactivos || a.activo !== false)
+    .filter((a) => coincideBusqueda(a, busqueda))
 
   return (
     <div>
@@ -65,9 +69,19 @@ export default function AlumnosPage() {
         </div>
       </div>
 
+      <div style={{ marginBottom: 12 }}>
+        <input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre o apellido..."
+        />
+      </div>
+
       <div className="card">
         {visibles.length === 0 ? (
-          <div className="empty-state">No hay alumnos cargados todavía.</div>
+          <div className="empty-state">
+            {busqueda ? 'No hay alumnos que coincidan con la búsqueda.' : 'No hay alumnos cargados todavía.'}
+          </div>
         ) : (
           <div className="scroll-x">
           <table>

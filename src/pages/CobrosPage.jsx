@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { subscribeAlumnos } from '../data/alumnos'
+import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
 import { subscribeTodosMovimientos, calcularSaldo } from '../data/movimientos'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
@@ -13,6 +13,7 @@ export default function CobrosPage() {
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
@@ -20,6 +21,7 @@ export default function CobrosPage() {
   const activos = alumnos.filter((a) => a.activo !== false)
 
   const filas = activos
+    .filter((a) => coincideBusqueda(a, busqueda))
     .map((a) => {
       const movsAlumno = movimientos.filter((m) => m.alumnoId === a.id)
       return { alumno: a, saldo: calcularSaldo(a, movsAlumno) }
@@ -49,9 +51,19 @@ export default function CobrosPage() {
         </div>
       </div>
 
+      <div style={{ marginBottom: 12 }}>
+        <input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre o apellido..."
+        />
+      </div>
+
       <div className="card">
         {filas.length === 0 ? (
-          <div className="empty-state">No hay alumnos para mostrar.</div>
+          <div className="empty-state">
+            {busqueda ? 'No hay alumnos que coincidan con la búsqueda.' : 'No hay alumnos para mostrar.'}
+          </div>
         ) : (
           <div className="scroll-x">
           <table>
@@ -87,8 +99,15 @@ export default function CobrosPage() {
       </div>
 
       {seleccionado && (
-        <div style={{ marginTop: 16 }}>
-          <CtaCteDetalle alumno={seleccionado} />
+        <div className="modal-overlay" onClick={() => setSeleccionadoId(null)}>
+          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="icon-btn" aria-label="Cerrar" onClick={() => setSeleccionadoId(null)}>
+                ✕
+              </button>
+            </div>
+            <CtaCteDetalle alumno={seleccionado} sinTarjeta />
+          </div>
         </div>
       )}
 
