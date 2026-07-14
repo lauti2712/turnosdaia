@@ -36,6 +36,7 @@ export default function DisponibilidadGrid({ turnos }) {
 
   return (
     <div className="card">
+      <div className="scroll-x">
       <table>
         <thead>
           <tr>
@@ -93,6 +94,7 @@ export default function DisponibilidadGrid({ turnos }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

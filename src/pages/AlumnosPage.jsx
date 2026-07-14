@@ -49,7 +49,7 @@ export default function AlumnosPage() {
     <div>
       <div className="page-title">
         <h2>Alumnos</h2>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
             <input
               type="checkbox"
@@ -69,6 +69,7 @@ export default function AlumnosPage() {
         {visibles.length === 0 ? (
           <div className="empty-state">No hay alumnos cargados todavía.</div>
         ) : (
+          <div className="scroll-x">
           <table>
             <thead>
               <tr>
@@ -116,6 +117,7 @@ export default function AlumnosPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

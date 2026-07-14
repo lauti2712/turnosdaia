@@ -33,7 +33,7 @@ export default function CobrosPage() {
     <div>
       <div className="page-title">
         <h2>Cobros</h2>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
             <input
               type="checkbox"
@@ -53,6 +53,7 @@ export default function CobrosPage() {
         {filas.length === 0 ? (
           <div className="empty-state">No hay alumnos para mostrar.</div>
         ) : (
+          <div className="scroll-x">
           <table>
             <thead>
               <tr>
@@ -81,6 +82,7 @@ export default function CobrosPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

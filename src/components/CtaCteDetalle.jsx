@@ -43,6 +43,7 @@ export default function CtaCteDetalle({ alumno }) {
       {movimientos.length === 0 ? (
         <div className="empty-state">Todavía no hay movimientos registrados.</div>
       ) : (
+        <div className="scroll-x">
         <table>
           <thead>
             <tr>
@@ -75,6 +76,7 @@ export default function CtaCteDetalle({ alumno }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )

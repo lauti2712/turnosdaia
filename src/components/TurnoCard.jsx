@@ -99,7 +99,7 @@ export default function TurnoCard({
       </div>
 
       {!plegado && (
-      <div className="turnos-grid" style={{ gridTemplateColumns: `repeat(${diasVisibles.length}, 1fr)` }}>
+      <div className="turnos-grid">
         {diasVisibles.map((dia) => {
           const asignados = turno.dias[dia] || []
           const hayCupo = asignados.length < turno.cupoMaximo

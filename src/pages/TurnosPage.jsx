@@ -54,7 +54,7 @@ export default function TurnosPage() {
     <div>
       <div className="page-title">
         <h2>Turnos</h2>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
             <input
               type="checkbox"
