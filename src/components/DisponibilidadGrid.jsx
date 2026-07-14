@@ -1,4 +1,4 @@
-import { DIAS, DIAS_LABEL } from '../data/turnos'
+import { DIAS, DIAS_LABEL, actualizarOrdenTurno } from '../data/turnos'
 
 export default function DisponibilidadGrid({ turnos }) {
   const filas = turnos
@@ -23,11 +23,23 @@ export default function DisponibilidadGrid({ turnos }) {
     )
   }
 
+  async function mover(index, direccion) {
+    const otro = index + direccion
+    if (otro < 0 || otro >= filas.length) return
+    const a = filas[index].turno
+    const b = filas[otro].turno
+    await Promise.all([
+      actualizarOrdenTurno(a.id, b.orden ?? 0),
+      actualizarOrdenTurno(b.id, a.orden ?? 0),
+    ])
+  }
+
   return (
     <div className="card">
       <table>
         <thead>
           <tr>
+            <th></th>
             <th>Turno</th>
             {DIAS.map((dia) => (
               <th key={dia}>{DIAS_LABEL[dia]}</th>
@@ -35,8 +47,28 @@ export default function DisponibilidadGrid({ turnos }) {
           </tr>
         </thead>
         <tbody>
-          {filas.map(({ turno, disponiblesPorDia }) => (
+          {filas.map(({ turno, disponiblesPorDia }, index) => (
             <tr key={turno.id}>
+              <td>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  <button
+                    className="icon-btn"
+                    aria-label="Subir"
+                    disabled={index === 0}
+                    onClick={() => mover(index, -1)}
+                  >
+                    ▲
+                  </button>
+                  <button
+                    className="icon-btn"
+                    aria-label="Bajar"
+                    disabled={index === filas.length - 1}
+                    onClick={() => mover(index, 1)}
+                  >
+                    ▼
+                  </button>
+                </div>
+              </td>
               <td>{turno.nombre}</td>
               {DIAS.map((dia) => {
                 const disponibles = disponiblesPorDia[dia]

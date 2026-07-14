@@ -5,6 +5,7 @@ import TurnoCard from '../components/TurnoCard'
 import TurnoModal from '../components/TurnoModal'
 import AlumnoModal from '../components/AlumnoModal'
 import DisponibilidadGrid from '../components/DisponibilidadGrid'
+import NuevoPagoModal from '../components/NuevoPagoModal'
 
 export default function TurnosPage() {
   const [turnos, setTurnos] = useState([])
@@ -12,6 +13,7 @@ export default function TurnosPage() {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [modalAlumnoAbierto, setModalAlumnoAbierto] = useState(false)
+  const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
   const [ocultarDiasVacios, setOcultarDiasVacios] = useState(false)
   const [mostrarDisponibilidad, setMostrarDisponibilidad] = useState(true)
 
@@ -62,6 +64,9 @@ export default function TurnosPage() {
             />
             Ocultar días sin alumnos
           </label>
+          <button className="btn btn-primary" onClick={() => setModalPagoAbierto(true)}>
+            + Nuevo pago
+          </button>
           <button className="btn btn-primary" onClick={() => setModalAlumnoAbierto(true)}>
             + Nuevo alumno
           </button>
@@ -115,6 +120,8 @@ export default function TurnosPage() {
       {modalAlumnoAbierto && (
         <AlumnoModal onSave={crearAlumno} onClose={() => setModalAlumnoAbierto(false)} />
       )}
+
+      {modalPagoAbierto && <NuevoPagoModal onClose={() => setModalPagoAbierto(false)} />}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
 import { subscribeTodosMovimientos, calcularSaldo } from '../data/movimientos'
 import CtaCteDetalle from '../components/CtaCteDetalle'
+import NuevoPagoModal from '../components/NuevoPagoModal'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -11,6 +12,7 @@ export default function CobrosPage() {
   const [movimientos, setMovimientos] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
+  const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
@@ -31,15 +33,20 @@ export default function CobrosPage() {
     <div>
       <div className="page-title">
         <h2>Cobros</h2>
-        <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
-          <input
-            type="checkbox"
-            style={{ width: 'auto' }}
-            checked={soloDeudores}
-            onChange={(e) => setSoloDeudores(e.target.checked)}
-          />
-          Mostrar solo alumnos que deben
-        </label>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              style={{ width: 'auto' }}
+              checked={soloDeudores}
+              onChange={(e) => setSoloDeudores(e.target.checked)}
+            />
+            Mostrar solo alumnos que deben
+          </label>
+          <button className="btn btn-primary" onClick={() => setModalPagoAbierto(true)}>
+            + Nuevo pago
+          </button>
+        </div>
       </div>
 
       <div className="card">
@@ -82,6 +89,8 @@ export default function CobrosPage() {
           <CtaCteDetalle alumno={seleccionado} />
         </div>
       )}
+
+      {modalPagoAbierto && <NuevoPagoModal onClose={() => setModalPagoAbierto(false)} />}
     </div>
   )
 }

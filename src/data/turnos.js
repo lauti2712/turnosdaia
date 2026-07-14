@@ -42,7 +42,7 @@ export function construirNombreTurno({ actividad, diasActivos, horario }) {
 }
 
 export function subscribeTurnos(callback) {
-  const q = query(turnosRef, orderBy('nombre'))
+  const q = query(turnosRef, orderBy('orden'))
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, dias: diasVacios(), diasActivos: [], ...d.data() })))
   })
@@ -56,8 +56,13 @@ export function crearTurno({ actividad, diasActivos, horario, cupoMaximo }) {
     cupoMaximo: Number(cupoMaximo) || 1,
     nombre: construirNombreTurno({ actividad, diasActivos, horario }),
     dias: diasVacios(),
+    orden: Date.now(),
     creadoTs: Date.now(),
   })
+}
+
+export function actualizarOrdenTurno(id, orden) {
+  return updateDoc(doc(db, 'turnos', id), { orden })
 }
 
 export function actualizarTurno(id, { actividad, diasActivos, horario, cupoMaximo }) {
