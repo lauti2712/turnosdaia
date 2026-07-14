@@ -37,7 +37,7 @@ function diasVacios() {
 export function construirNombreTurno({ actividad, diasActivos, horario }) {
   const iniciales = DIAS.filter((d) => (diasActivos || []).includes(d))
     .map((d) => DIAS_INICIAL[d])
-    .join('')
+    .join(', ')
   return [actividad, iniciales, horario].filter(Boolean).join(' ')
 }
 
