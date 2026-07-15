@@ -3,6 +3,7 @@ import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
 import { subscribeTodosMovimientos, calcularSaldo } from '../data/movimientos'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
+import HistorialCobrosModal from '../components/HistorialCobrosModal'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -13,6 +14,7 @@ export default function CobrosPage() {
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
+  const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
@@ -56,6 +58,9 @@ export default function CobrosPage() {
           </label>
           <button className="btn btn-primary" onClick={() => setModalPagoAbierto(true)}>
             + Nuevo pago
+          </button>
+          <button className="btn" onClick={() => setModalHistorialAbierto(true)}>
+            Ver historial
           </button>
         </div>
       </div>
@@ -136,6 +141,10 @@ export default function CobrosPage() {
       )}
 
       {modalPagoAbierto && <NuevoPagoModal onClose={() => setModalPagoAbierto(false)} />}
+
+      {modalHistorialAbierto && (
+        <HistorialCobrosModal onClose={() => setModalHistorialAbierto(false)} />
+      )}
     </div>
   )
 }
