@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
 import { subscribeTodosMovimientos, calcularSaldo } from '../data/movimientos'
+import { subscribeEntregasVivi } from '../data/entregasVivi'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
+import CuentaViviModal from '../components/CuentaViviModal'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -11,14 +13,17 @@ const fmtMoney = (n) =>
 export default function CobrosPage() {
   const [alumnos, setAlumnos] = useState([])
   const [movimientos, setMovimientos] = useState([])
+  const [entregas, setEntregas] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
   const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false)
+  const [modalViviAbierto, setModalViviAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
+  useEffect(() => subscribeEntregasVivi(setEntregas), [])
 
   const activos = alumnos.filter((a) => a.activo !== false)
 
@@ -34,9 +39,18 @@ export default function CobrosPage() {
 
   const hoy = new Date()
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
-  const totalCobradoMes = movimientos
-    .filter((m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mesActual))
+  const pagosDelMes = movimientos.filter(
+    (m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mesActual),
+  )
+  const totalCobradoMes = pagosDelMes
+    .filter((m) => !m.abonadoAVivi)
     .reduce((acc, m) => acc + m.monto, 0)
+  const totalAbonadoAViviMes = pagosDelMes
+    .filter((m) => m.abonadoAVivi)
+    .reduce((acc, m) => acc + m.monto, 0)
+  const totalEntregadoAViviMes = entregas
+    .filter((e) => (e.fecha || '').startsWith(mesActual))
+    .reduce((acc, e) => acc + e.monto, 0)
 
   const totalAdeudado = filasCompletas.reduce((acc, f) => acc + Math.max(f.saldo, 0), 0)
 
@@ -62,6 +76,9 @@ export default function CobrosPage() {
           <button className="btn" onClick={() => setModalHistorialAbierto(true)}>
             Ver historial
           </button>
+          <button className="btn" onClick={() => setModalViviAbierto(true)}>
+            Cuenta de Vivi
+          </button>
         </div>
       </div>
 
@@ -70,6 +87,18 @@ export default function CobrosPage() {
           <div className="stat-label">Cobrado este mes</div>
           <div className="stat-value" style={{ color: 'var(--success)' }}>
             {fmtMoney(totalCobradoMes)}
+          </div>
+        </div>
+        <div className="stat-tile">
+          <div className="stat-label">Abonado a Vivi</div>
+          <div className="stat-value" style={{ fontSize: '1.3rem' }}>
+            {fmtMoney(totalAbonadoAViviMes)}
+          </div>
+        </div>
+        <div className="stat-tile">
+          <div className="stat-label">Entregado a Vivi</div>
+          <div className="stat-value" style={{ fontSize: '1.3rem' }}>
+            {fmtMoney(totalEntregadoAViviMes)}
           </div>
         </div>
         <div className="stat-tile">
@@ -145,6 +174,8 @@ export default function CobrosPage() {
       {modalHistorialAbierto && (
         <HistorialCobrosModal onClose={() => setModalHistorialAbierto(false)} />
       )}
+
+      {modalViviAbierto && <CuentaViviModal onClose={() => setModalViviAbierto(false)} />}
     </div>
   )
 }

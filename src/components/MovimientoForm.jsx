@@ -9,6 +9,7 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
   const [fecha, setFecha] = useState(hoy())
   const [formaPago, setFormaPago] = useState('')
   const [descripcion, setDescripcion] = useState('')
+  const [abonadoAVivi, setAbonadoAVivi] = useState(false)
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
@@ -21,12 +22,13 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
     setGuardando(true)
     try {
       if (tipo === 'pago') {
-        await registrarPago({ alumnoId: alumno.id, monto, fecha, formaPago, descripcion })
+        await registrarPago({ alumnoId: alumno.id, monto, fecha, formaPago, descripcion, abonadoAVivi })
       } else {
         await registrarAjuste({ alumnoId: alumno.id, monto, fecha, descripcion })
       }
       setMonto(alumno.montoMensual || '')
       setDescripcion('')
+      setAbonadoAVivi(false)
       onGuardado?.()
     } finally {
       setGuardando(false)
@@ -76,6 +78,26 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
           required={tipo === 'ajuste'}
         />
       </div>
+      {tipo === 'pago' && (
+        <label
+          className="muted"
+          style={{
+            display: 'flex',
+            gap: 6,
+            alignItems: 'center',
+            fontSize: '0.85rem',
+            marginTop: 10,
+          }}
+        >
+          <input
+            type="checkbox"
+            style={{ width: 'auto' }}
+            checked={abonadoAVivi}
+            onChange={(e) => setAbonadoAVivi(e.target.checked)}
+          />
+          Abonado a Vivi (lo cobró ella directamente)
+        </label>
+      )}
       <div style={{ marginTop: 10 }}>
         <button type="submit" className="btn btn-primary" disabled={guardando}>
           Registrar {tipo === 'pago' ? 'pago' : 'ajuste'}

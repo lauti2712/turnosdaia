@@ -115,6 +115,11 @@ export default function HistorialCobrosModal({ onClose }) {
                         ) : (
                           <span className="badge badge-warning">Ajuste</span>
                         )}
+                        {m.abonadoAVivi && (
+                          <span className="badge badge-warning" style={{ marginLeft: 4 }}>
+                            Vivi
+                          </span>
+                        )}
                       </td>
                       <td>{fmtMoney(m.monto)}</td>
                       <td className="muted">{[m.formaPago, m.descripcion].filter(Boolean).join(' · ')}</td>

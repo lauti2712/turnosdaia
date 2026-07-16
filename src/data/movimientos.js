@@ -30,7 +30,7 @@ export function subscribeTodosMovimientos(callback) {
   })
 }
 
-export function registrarPago({ alumnoId, monto, fecha, formaPago, descripcion }) {
+export function registrarPago({ alumnoId, monto, fecha, formaPago, descripcion, abonadoAVivi }) {
   return addDoc(movimientosRef, {
     alumnoId,
     tipo: 'pago',
@@ -38,6 +38,7 @@ export function registrarPago({ alumnoId, monto, fecha, formaPago, descripcion }
     fecha,
     formaPago: formaPago || '',
     descripcion: descripcion || '',
+    abonadoAVivi: !!abonadoAVivi,
     ts: Date.now(),
   })
 }
