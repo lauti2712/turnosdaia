@@ -136,16 +136,20 @@ export default function CuentaViviModal({ onClose }) {
         </div>
 
         <div className="stats-row">
-          <div className="stat-tile">
-            <div className="stat-label">Cobrado por Vivi</div>
-            <div className="stat-value" style={{ fontSize: '1.2rem' }}>
-              {fmtMoney(totalCobradoPorVivi)}
-            </div>
-          </div>
-          <div className="stat-tile">
-            <div className="stat-label">Entregado a Vivi</div>
-            <div className="stat-value" style={{ fontSize: '1.2rem' }}>
-              {fmtMoney(totalEntregado)}
+          <div className="stat-tile stat-tile-wide">
+            <div className="stat-split">
+              <div>
+                <div className="stat-split-label">Abonado a Vivi</div>
+                <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
+              </div>
+              <div>
+                <div className="stat-split-label">Entregado a Vivi</div>
+                <div className="stat-split-value">{fmtMoney(totalEntregado)}</div>
+              </div>
+              <div className="stat-split-total">
+                <div className="stat-split-label">Total cobrado por Vivi</div>
+                <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi + totalEntregado)}</div>
+              </div>
             </div>
           </div>
         </div>

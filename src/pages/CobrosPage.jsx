@@ -89,16 +89,23 @@ export default function CobrosPage() {
             {fmtMoney(totalCobradoMes)}
           </div>
         </div>
-        <div className="stat-tile">
-          <div className="stat-label">Abonado a Vivi</div>
-          <div className="stat-value" style={{ fontSize: '1.3rem' }}>
-            {fmtMoney(totalAbonadoAViviMes)}
-          </div>
-        </div>
-        <div className="stat-tile">
-          <div className="stat-label">Entregado a Vivi</div>
-          <div className="stat-value" style={{ fontSize: '1.3rem' }}>
-            {fmtMoney(totalEntregadoAViviMes)}
+        <div className="stat-tile stat-tile-wide">
+          <div className="stat-label">Vivi</div>
+          <div className="stat-split">
+            <div>
+              <div className="stat-split-label">Abonado a Vivi</div>
+              <div className="stat-split-value">{fmtMoney(totalAbonadoAViviMes)}</div>
+            </div>
+            <div>
+              <div className="stat-split-label">Entregado a Vivi</div>
+              <div className="stat-split-value">{fmtMoney(totalEntregadoAViviMes)}</div>
+            </div>
+            <div className="stat-split-total">
+              <div className="stat-split-label">Total cobrado por Vivi</div>
+              <div className="stat-split-value">
+                {fmtMoney(totalAbonadoAViviMes + totalEntregadoAViviMes)}
+              </div>
+            </div>
           </div>
         </div>
         <div className="stat-tile">

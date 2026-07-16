@@ -142,6 +142,33 @@ button {
   margin-top: 4px;
 }
 
+.stat-tile-wide {
+  flex: 2;
+  min-width: 280px;
+}
+
+.stat-split {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.stat-split-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.stat-split-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.stat-split-total .stat-split-value {
+  color: var(--primary);
+}
+
 .grid {
   display: grid;
   gap: 16px;
