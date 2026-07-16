@@ -1,5 +1,10 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  connectFirestoreEmulator,
+} from 'firebase/firestore'
 
 const firebaseConfigProd = {
   apiKey: 'AIzaSyD71TmEtUL-RCTvFRW9FZJzjC0r3vNWSfo',
@@ -18,7 +23,14 @@ const firebaseConfigDev = {
 }
 
 const app = initializeApp(import.meta.env.DEV ? firebaseConfigDev : firebaseConfigProd)
-export const db = getFirestore(app)
+
+// Cache local persistente (IndexedDB): permite leer y seguir creando/editando
+// datos sin conexión — los cambios quedan en cola y se sincronizan solos
+// cuando vuelve la señal. persistentMultipleTabManager para que ande bien
+// si se abre la app en más de una pestaña a la vez.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+})
 
 if (import.meta.env.DEV) {
   connectFirestoreEmulator(db, '127.0.0.1', 8080)

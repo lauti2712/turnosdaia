@@ -2,11 +2,19 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-do
 import TurnosPage from './pages/TurnosPage'
 import AlumnosPage from './pages/AlumnosPage'
 import CobrosPage from './pages/CobrosPage'
+import { useOnlineStatus } from './hooks/useOnlineStatus'
 
 function App() {
+  const online = useOnlineStatus()
+
   return (
     <BrowserRouter>
       <div className="app-shell">
+        {!online && (
+          <div className="offline-banner">
+            Sin conexión — los cambios se guardan igual y se sincronizan solos cuando vuelva la señal.
+          </div>
+        )}
         <header className="app-header">
           <h1>Pilates &amp; Yoga</h1>
           <nav className="nav">
