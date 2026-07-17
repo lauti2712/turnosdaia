@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
-import { subscribeTodosMovimientos, calcularSaldo } from '../data/movimientos'
+import { subscribeTodosMovimientos, calcularSaldo, montoAVivi, montoPropio } from '../data/movimientos'
 import { subscribeEntregasVivi } from '../data/entregasVivi'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
@@ -42,12 +42,8 @@ export default function CobrosPage() {
   const pagosDelMes = movimientos.filter(
     (m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mesActual),
   )
-  const totalCobradoMes = pagosDelMes
-    .filter((m) => !m.abonadoAVivi)
-    .reduce((acc, m) => acc + m.monto, 0)
-  const totalAbonadoAViviMes = pagosDelMes
-    .filter((m) => m.abonadoAVivi)
-    .reduce((acc, m) => acc + m.monto, 0)
+  const totalCobradoMes = pagosDelMes.reduce((acc, m) => acc + montoPropio(m), 0)
+  const totalAbonadoAViviMes = pagosDelMes.reduce((acc, m) => acc + montoAVivi(m), 0)
   const totalEntregadoAViviMes = entregas
     .filter((e) => (e.fecha || '').startsWith(mesActual))
     .reduce((acc, e) => acc + e.monto, 0)

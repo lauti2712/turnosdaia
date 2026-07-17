@@ -10,6 +10,7 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
   const [formaPago, setFormaPago] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [abonadoAVivi, setAbonadoAVivi] = useState(false)
+  const [porcentajeVivi, setPorcentajeVivi] = useState(50)
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
@@ -22,13 +23,22 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
     setGuardando(true)
     try {
       if (tipo === 'pago') {
-        await registrarPago({ alumnoId: alumno.id, monto, fecha, formaPago, descripcion, abonadoAVivi })
+        await registrarPago({
+          alumnoId: alumno.id,
+          monto,
+          fecha,
+          formaPago,
+          descripcion,
+          abonadoAVivi,
+          porcentajeVivi,
+        })
       } else {
         await registrarAjuste({ alumnoId: alumno.id, monto, fecha, descripcion })
       }
       setMonto(alumno.montoMensual || '')
       setDescripcion('')
       setAbonadoAVivi(false)
+      setPorcentajeVivi(50)
       onGuardado?.()
     } finally {
       setGuardando(false)
@@ -79,24 +89,48 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
         />
       </div>
       {tipo === 'pago' && (
-        <label
-          className="muted"
-          style={{
-            display: 'flex',
-            gap: 6,
-            alignItems: 'center',
-            fontSize: '0.85rem',
-            marginTop: 10,
-          }}
-        >
-          <input
-            type="checkbox"
-            style={{ width: 'auto' }}
-            checked={abonadoAVivi}
-            onChange={(e) => setAbonadoAVivi(e.target.checked)}
-          />
-          Abonado a Vivi (lo cobró ella directamente)
-        </label>
+        <div style={{ marginTop: 10 }}>
+          <label
+            className="muted"
+            style={{
+              display: 'flex',
+              gap: 6,
+              alignItems: 'center',
+              fontSize: '0.85rem',
+            }}
+          >
+            <input
+              type="checkbox"
+              style={{ width: 'auto' }}
+              checked={abonadoAVivi}
+              onChange={(e) => setAbonadoAVivi(e.target.checked)}
+            />
+            Abonado a Vivi (lo cobró ella directamente)
+          </label>
+
+          {abonadoAVivi && (
+            <div style={{ display: 'flex', gap: 16, marginTop: 8, marginLeft: 22 }}>
+              <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.85rem' }}>
+                <input
+                  type="radio"
+                  style={{ width: 'auto' }}
+                  checked={porcentajeVivi === 50}
+                  onChange={() => setPorcentajeVivi(50)}
+                />
+                50% a Vivi / 50% propio
+              </label>
+              <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.85rem' }}>
+                <input
+                  type="radio"
+                  style={{ width: 'auto' }}
+                  checked={porcentajeVivi === 60}
+                  onChange={() => setPorcentajeVivi(60)}
+                />
+                60% a Vivi / 40% propio
+              </label>
+            </div>
+          )}
+        </div>
       )}
       <div style={{ marginTop: 10 }}>
         <button type="submit" className="btn btn-primary" disabled={guardando}>

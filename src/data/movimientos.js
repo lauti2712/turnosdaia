@@ -30,7 +30,15 @@ export function subscribeTodosMovimientos(callback) {
   })
 }
 
-export function registrarPago({ alumnoId, monto, fecha, formaPago, descripcion, abonadoAVivi }) {
+export function registrarPago({
+  alumnoId,
+  monto,
+  fecha,
+  formaPago,
+  descripcion,
+  abonadoAVivi,
+  porcentajeVivi,
+}) {
   return addDoc(movimientosRef, {
     alumnoId,
     tipo: 'pago',
@@ -39,8 +47,24 @@ export function registrarPago({ alumnoId, monto, fecha, formaPago, descripcion, 
     formaPago: formaPago || '',
     descripcion: descripcion || '',
     abonadoAVivi: !!abonadoAVivi,
+    porcentajeVivi: abonadoAVivi ? Number(porcentajeVivi) || 100 : null,
     ts: Date.now(),
   })
+}
+
+// De un pago marcado "abonado a Vivi", qué parte le corresponde a ella y qué
+// parte queda como cobrado propio. Pagos viejos sin porcentajeVivi se tratan
+// como 100% de Vivi (comportamiento anterior, antes de existir el reparto).
+export function montoAVivi(movimiento) {
+  if (!movimiento.abonadoAVivi) return 0
+  const pct = movimiento.porcentajeVivi ?? 100
+  return movimiento.monto * (pct / 100)
+}
+
+export function montoPropio(movimiento) {
+  if (!movimiento.abonadoAVivi) return movimiento.monto
+  const pct = movimiento.porcentajeVivi ?? 100
+  return movimiento.monto * (1 - pct / 100)
 }
 
 export function registrarAjuste({ alumnoId, monto, fecha, descripcion }) {

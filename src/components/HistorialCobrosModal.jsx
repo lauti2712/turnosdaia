@@ -117,7 +117,7 @@ export default function HistorialCobrosModal({ onClose }) {
                         )}
                         {m.abonadoAVivi && (
                           <span className="badge badge-warning" style={{ marginLeft: 4 }}>
-                            Vivi
+                            Vivi {m.porcentajeVivi ?? 100}%
                           </span>
                         )}
                       </td>

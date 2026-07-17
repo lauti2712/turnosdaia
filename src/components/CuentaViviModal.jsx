@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
-import { subscribeTodosMovimientos, eliminarMovimiento } from '../data/movimientos'
+import { subscribeTodosMovimientos, eliminarMovimiento, montoAVivi } from '../data/movimientos'
 import {
   subscribeEntregasVivi,
   registrarEntregaVivi,
@@ -55,7 +55,7 @@ export default function CuentaViviModal({ onClose }) {
   )
   const entregadoDelMes = entregas.filter((e) => (e.fecha || '').startsWith(mes))
 
-  const totalCobradoPorVivi = cobradoPorVivi.reduce((acc, m) => acc + m.monto, 0)
+  const totalCobradoPorVivi = cobradoPorVivi.reduce((acc, m) => acc + montoAVivi(m), 0)
   const totalEntregado = entregadoDelMes.reduce((acc, e) => acc + e.monto, 0)
 
   const filas = [
@@ -64,8 +64,14 @@ export default function CuentaViviModal({ onClose }) {
       fecha: m.fecha,
       tipo: 'cobrado',
       alumno: alumnosPorId[m.alumnoId],
-      monto: m.monto,
-      detalle: [m.formaPago, m.descripcion].filter(Boolean).join(' · '),
+      monto: montoAVivi(m),
+      detalle: [
+        `${m.porcentajeVivi ?? 100}% de ${fmtMoney(m.monto)}`,
+        m.formaPago,
+        m.descripcion,
+      ]
+        .filter(Boolean)
+        .join(' · '),
       onEliminar: () => eliminarMovimiento(m.id),
     })),
     ...entregadoDelMes.map((e) => ({
