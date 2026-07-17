@@ -4,6 +4,8 @@ import {
   eliminarMovimiento,
   calcularSaldo,
   mesesTranscurridos,
+  montoViviDePago,
+  montoPropioDePago,
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
 import MovimientoForm from './MovimientoForm'
@@ -67,9 +69,25 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
                   ) : (
                     <span className="badge badge-warning">Ajuste</span>
                   )}
+                  {m.tipo === 'pago' && m.abonadoAVivi && (
+                    <span className="badge badge-warning" style={{ marginLeft: 4 }}>
+                      Cobró Vivi
+                    </span>
+                  )}
                 </td>
                 <td>{fmtMoney(m.monto)}</td>
-                <td className="muted">{[m.formaPago, m.descripcion].filter(Boolean).join(' · ')}</td>
+                <td className="muted">
+                  {m.tipo === 'pago' && m.abonadoAVivi ? (
+                    <>
+                      {m.porcentajeVivi ?? 0}% Vivi ({fmtMoney(montoViviDePago(m))}) · propio (
+                      {fmtMoney(montoPropioDePago(m))})
+                      {(m.formaPago || m.descripcion) &&
+                        ' · ' + [m.formaPago, m.descripcion].filter(Boolean).join(' · ')}
+                    </>
+                  ) : (
+                    [m.formaPago, m.descripcion].filter(Boolean).join(' · ')
+                  )}
+                </td>
                 <td>
                   <button className="icon-btn" onClick={() => eliminarMovimiento(m.id)}>
                     ✕
