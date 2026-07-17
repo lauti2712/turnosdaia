@@ -7,6 +7,7 @@ import {
   montoViviDePago,
   montoPropioDePago,
 } from '../data/movimientos'
+import { subscribePagosVivi } from '../data/pagosVivi'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
@@ -19,6 +20,7 @@ export default function CobrosPage() {
   const [alumnos, setAlumnos] = useState([])
   const [actividades, setActividades] = useState([])
   const [movimientos, setMovimientos] = useState([])
+  const [pagosVivi, setPagosVivi] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
@@ -29,6 +31,7 @@ export default function CobrosPage() {
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeActividades(setActividades), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
+  useEffect(() => subscribePagosVivi(setPagosVivi), [])
 
   const activos = alumnos.filter((a) => a.activo !== false)
 
@@ -51,10 +54,14 @@ export default function CobrosPage() {
   const pagosMiosDelMes = pagosDelMes.filter((m) => !m.abonadoAVivi)
   const pagosDeViviDelMes = pagosDelMes.filter((m) => m.abonadoAVivi)
 
-  // Lo que yo cobré de las alumnas (monto bruto, antes de descontar la parte de Vivi).
+  // Lo que yo cobré de las alumnas (monto bruto). No se le impute nada a
+  // Vivi automáticamente acá — eso se registra aparte, cuando yo decida
+  // pagarle, desde "Nuevo pago" → "A Vivi".
   const cobradoPorMi = pagosMiosDelMes.reduce((acc, m) => acc + m.monto, 0)
-  // De lo que cobré yo, la parte que le corresponde a Vivi y que le tengo que entregar.
-  const lePagueAVivi = pagosMiosDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
+  // Lo que efectivamente le pagué a Vivi este mes (registro manual).
+  const lePagueAVivi = pagosVivi
+    .filter((p) => (p.fecha || '').startsWith(mesActual))
+    .reduce((acc, p) => acc + p.monto, 0)
   // De lo que cobró Vivi directamente, la parte que es mía y ella me debe.
   const mePagoVivi = pagosDeViviDelMes.reduce((acc, m) => acc + montoPropioDePago(m), 0)
   // De lo que cobró Vivi directamente, su propia parte (lo que le quedó a ella).

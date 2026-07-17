@@ -110,7 +110,9 @@ export default function MovimientoForm({ alumno, actividades = [], tipoInicial =
           </label>
           <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
             De este pago, {porcentajeVivi}% le corresponde a Vivi según su actividad
-            {abonadoAVivi ? ' (ella te debe el resto)' : ' (se lo tenés que entregar)'}.
+            {abonadoAVivi
+              ? ' (ella te debe el resto).'
+              : ' — se lo pagás cuando quieras desde "Nuevo pago" → "A Vivi".'}
           </div>
         </div>
       )}
