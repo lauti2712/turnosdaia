@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
-import { subscribeTodosMovimientos, eliminarMovimiento, montoAVivi } from '../data/movimientos'
-import {
-  subscribeEntregasVivi,
-  registrarEntregaVivi,
-  eliminarEntregaVivi,
-} from '../data/entregasVivi'
+import { subscribeActividades } from '../data/actividades'
+import { subscribeTodosMovimientos, montoViviDePago, montoPropioDePago } from '../data/movimientos'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -14,8 +10,6 @@ const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
-
-const hoy = () => new Date().toISOString().slice(0, 10)
 
 function mesActualId() {
   const d = new Date()
@@ -35,77 +29,29 @@ function etiquetaMes(mesId) {
 
 export default function CuentaViviModal({ onClose }) {
   const [alumnos, setAlumnos] = useState([])
+  const [actividades, setActividades] = useState([])
   const [movimientos, setMovimientos] = useState([])
-  const [entregas, setEntregas] = useState([])
   const [mes, setMes] = useState(mesActualId())
-  const [mostrarForm, setMostrarForm] = useState(false)
-  const [monto, setMonto] = useState('')
-  const [fecha, setFecha] = useState(hoy())
-  const [descripcion, setDescripcion] = useState('')
-  const [guardando, setGuardando] = useState(false)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
+  useEffect(() => subscribeActividades(setActividades), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
-  useEffect(() => subscribeEntregasVivi(setEntregas), [])
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
+  const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
 
-  const cobradoPorVivi = movimientos.filter(
-    (m) => m.tipo === 'pago' && m.abonadoAVivi && (m.fecha || '').startsWith(mes),
+  const pagosDelMes = movimientos.filter(
+    (m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mes),
   )
-  const entregadoDelMes = entregas.filter((e) => (e.fecha || '').startsWith(mes))
+  const pagosMios = pagosDelMes.filter((m) => !m.abonadoAVivi)
+  const pagosDeVivi = pagosDelMes.filter((m) => m.abonadoAVivi)
 
-  const totalCobradoPorVivi = cobradoPorVivi.reduce((acc, m) => acc + montoAVivi(m), 0)
-  const totalEntregado = entregadoDelMes.reduce((acc, e) => acc + e.monto, 0)
+  const mePagoVivi = pagosDeVivi.reduce((acc, m) => acc + montoPropioDePago(m), 0)
+  const lePagaronAVivi = pagosDeVivi.reduce((acc, m) => acc + montoViviDePago(m), 0)
+  const lePagueAVivi = pagosMios.reduce((acc, m) => acc + montoViviDePago(m), 0)
+  const totalCobradoPorVivi = lePagaronAVivi + lePagueAVivi
 
-  const filas = [
-    ...cobradoPorVivi.map((m) => ({
-      id: `pago-${m.id}`,
-      fecha: m.fecha,
-      tipo: 'cobrado',
-      alumno: alumnosPorId[m.alumnoId],
-      monto: montoAVivi(m),
-      detalle: [
-        `${m.porcentajeVivi ?? 100}% de ${fmtMoney(m.monto)}`,
-        m.formaPago,
-        m.descripcion,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      onEliminar: () => eliminarMovimiento(m.id),
-    })),
-    ...entregadoDelMes.map((e) => ({
-      id: `entrega-${e.id}`,
-      fecha: e.fecha,
-      tipo: 'entregado',
-      alumno: null,
-      monto: e.monto,
-      detalle: e.descripcion,
-      onEliminar: () => eliminarEntregaVivi(e.id),
-    })),
-  ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
-
-  async function handleEliminar(fila) {
-    const tipoTexto = fila.tipo === 'cobrado' ? 'cobro de Vivi' : 'entrega a Vivi'
-    if (confirm(`¿Eliminar este ${tipoTexto} de ${fmtMoney(fila.monto)}?`)) {
-      await fila.onEliminar()
-    }
-  }
-
-  async function handleSubmitEntrega(e) {
-    e.preventDefault()
-    if (!monto) return
-    setGuardando(true)
-    try {
-      await registrarEntregaVivi({ monto, fecha, descripcion })
-      setMonto('')
-      setDescripcion('')
-      setFecha(hoy())
-      setMostrarForm(false)
-    } finally {
-      setGuardando(false)
-    }
-  }
+  const filas = [...pagosDelMes].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -117,27 +63,13 @@ export default function CuentaViviModal({ onClose }) {
           </button>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 14,
-            flexWrap: 'wrap',
-            gap: 8,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button className="icon-btn" aria-label="Mes anterior" onClick={() => setMes((m) => sumarMeses(m, -1))}>
-              ◀
-            </button>
-            <strong>{etiquetaMes(mes)}</strong>
-            <button className="icon-btn" aria-label="Mes siguiente" onClick={() => setMes((m) => sumarMeses(m, 1))}>
-              ▶
-            </button>
-          </div>
-          <button className="btn btn-sm" onClick={() => setMostrarForm((v) => !v)}>
-            + Registrar entrega a Vivi
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <button className="icon-btn" aria-label="Mes anterior" onClick={() => setMes((m) => sumarMeses(m, -1))}>
+            ◀
+          </button>
+          <strong>{etiquetaMes(mes)}</strong>
+          <button className="icon-btn" aria-label="Mes siguiente" onClick={() => setMes((m) => sumarMeses(m, 1))}>
+            ▶
           </button>
         </div>
 
@@ -145,88 +77,65 @@ export default function CuentaViviModal({ onClose }) {
           <div className="stat-tile stat-tile-wide">
             <div className="stat-split">
               <div>
-                <div className="stat-split-label">Abonado a Vivi</div>
-                <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
+                <div className="stat-split-label">Me pagó Vivi</div>
+                <div className="stat-split-value">{fmtMoney(mePagoVivi)}</div>
               </div>
               <div>
-                <div className="stat-split-label">Entregado a Vivi</div>
-                <div className="stat-split-value">{fmtMoney(totalEntregado)}</div>
+                <div className="stat-split-label">Le pagaron a Vivi</div>
+                <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
+              </div>
+              <div>
+                <div className="stat-split-label">Le pagué a Vivi</div>
+                <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
               </div>
               <div className="stat-split-total">
                 <div className="stat-split-label">Total cobrado por Vivi</div>
-                <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi + totalEntregado)}</div>
+                <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
               </div>
             </div>
           </div>
         </div>
 
-        {mostrarForm && (
-          <form onSubmit={handleSubmitEntrega} className="card" style={{ marginBottom: 14 }}>
-            <div className="form-row">
-              <div className="field">
-                <label>Monto</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={monto}
-                  onChange={(e) => setMonto(e.target.value)}
-                  autoFocus
-                  required
-                />
-              </div>
-              <div className="field">
-                <label>Fecha</label>
-                <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
-              </div>
-              <div className="field">
-                <label>Descripción (opcional)</label>
-                <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-              </div>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <button type="submit" className="btn btn-primary" disabled={guardando}>
-                Registrar entrega
-              </button>
-            </div>
-          </form>
-        )}
-
         {filas.length === 0 ? (
-          <div className="empty-state">No hay movimientos de Vivi en {etiquetaMes(mes)}.</div>
+          <div className="empty-state">No hay pagos en {etiquetaMes(mes)}.</div>
         ) : (
           <div className="scroll-x">
             <table>
               <thead>
                 <tr>
                   <th>Fecha</th>
-                  <th>Tipo</th>
                   <th>Alumna</th>
+                  <th>Actividad</th>
+                  <th>Cobró</th>
                   <th>Monto</th>
-                  <th>Detalle</th>
-                  <th></th>
+                  <th>% Vivi</th>
+                  <th>De Vivi</th>
+                  <th>Propio</th>
                 </tr>
               </thead>
               <tbody>
-                {filas.map((f) => (
-                  <tr key={f.id}>
-                    <td>{f.fecha}</td>
-                    <td>
-                      {f.tipo === 'cobrado' ? (
-                        <span className="badge badge-warning">Cobrado por Vivi</span>
-                      ) : (
-                        <span className="badge badge-danger">Entregado a Vivi</span>
-                      )}
-                    </td>
-                    <td>{f.alumno ? `${f.alumno.apellido}, ${f.alumno.nombre}` : '—'}</td>
-                    <td>{fmtMoney(f.monto)}</td>
-                    <td className="muted">{f.detalle}</td>
-                    <td>
-                      <button className="icon-btn" aria-label="Eliminar" onClick={() => handleEliminar(f)}>
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filas.map((m) => {
+                  const alumno = alumnosPorId[m.alumnoId]
+                  const actividad = actividadesPorId[alumno?.actividadId]
+                  return (
+                    <tr key={m.id}>
+                      <td>{m.fecha}</td>
+                      <td>{alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)'}</td>
+                      <td className="muted">{actividad?.nombre || '—'}</td>
+                      <td>
+                        {m.abonadoAVivi ? (
+                          <span className="badge badge-warning">Vivi</span>
+                        ) : (
+                          <span className="badge badge-success">Yo</span>
+                        )}
+                      </td>
+                      <td>{fmtMoney(m.monto)}</td>
+                      <td className="muted">{m.porcentajeVivi ?? 0}%</td>
+                      <td>{fmtMoney(montoViviDePago(m))}</td>
+                      <td>{fmtMoney(montoPropioDePago(m))}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

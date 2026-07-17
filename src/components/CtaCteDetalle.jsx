@@ -5,19 +5,22 @@ import {
   calcularSaldo,
   mesesTranscurridos,
 } from '../data/movimientos'
+import { montoMensualEfectivo } from '../data/actividades'
 import MovimientoForm from './MovimientoForm'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
-export default function CtaCteDetalle({ alumno, sinTarjeta = false }) {
+export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false }) {
   const [movimientos, setMovimientos] = useState([])
 
   useEffect(() => subscribeMovimientos(alumno.id, setMovimientos), [alumno.id])
 
-  const saldo = calcularSaldo(alumno, movimientos)
+  const montoMensual = montoMensualEfectivo(alumno, actividades)
+  const alumnoConPrecio = { ...alumno, montoMensual }
+  const saldo = calcularSaldo(alumnoConPrecio, movimientos)
   const meses = mesesTranscurridos(alumno.fechaInicio)
-  const deudaTotal = meses * (alumno.montoMensual || 0)
+  const deudaTotal = meses * montoMensual
   const pagado = movimientos.filter((m) => m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
 
   return (
@@ -37,7 +40,7 @@ export default function CtaCteDetalle({ alumno, sinTarjeta = false }) {
       </p>
 
       <div style={{ marginBottom: 18 }}>
-        <MovimientoForm alumno={alumno} />
+        <MovimientoForm alumno={alumnoConPrecio} actividades={actividades} />
       </div>
 
       {movimientos.length === 0 ? (

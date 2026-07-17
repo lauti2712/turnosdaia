@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
+import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import AlumnoBuscador from './AlumnoBuscador'
 import MovimientoForm from './MovimientoForm'
 
 export default function NuevoPagoModal({ onClose }) {
   const [alumnos, setAlumnos] = useState([])
+  const [actividades, setActividades] = useState([])
   const [alumno, setAlumno] = useState(null)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
+  useEffect(() => subscribeActividades(setActividades), [])
 
   const activos = alumnos.filter((a) => a.activo !== false)
+  const alumnoConPrecio = alumno
+    ? { ...alumno, montoMensual: montoMensualEfectivo(alumno, actividades) }
+    : null
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -46,8 +52,13 @@ export default function NuevoPagoModal({ onClose }) {
           )}
         </div>
 
-        {alumno ? (
-          <MovimientoForm alumno={alumno} tipoInicial="pago" onGuardado={onClose} />
+        {alumnoConPrecio ? (
+          <MovimientoForm
+            alumno={alumnoConPrecio}
+            actividades={actividades}
+            tipoInicial="pago"
+            onGuardado={onClose}
+          />
         ) : (
           <p className="muted" style={{ fontSize: '0.85rem' }}>
             Buscá y elegí un alumno para cargar el pago.

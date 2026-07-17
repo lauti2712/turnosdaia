@@ -19,28 +19,36 @@ export function subscribeAlumnos(callback) {
   })
 }
 
-export function crearAlumno({
+function normalizarAlumno({
   nombre,
   apellido,
   diasPorSemana,
-  montoMensual,
+  actividadId,
+  precioManual,
   fechaInicio,
-  extra = [],
+  extra,
 }) {
-  return addDoc(alumnosRef, {
+  return {
     nombre,
     apellido,
     diasPorSemana: Number(diasPorSemana) || 0,
-    montoMensual: Number(montoMensual) || 0,
+    actividadId: actividadId || null,
+    precioManual: precioManual === '' || precioManual == null ? null : Number(precioManual),
     fechaInicio,
-    extra,
+    extra: extra || [],
+  }
+}
+
+export function crearAlumno(datos) {
+  return addDoc(alumnosRef, {
+    ...normalizarAlumno(datos),
     activo: true,
     creadoTs: Date.now(),
   })
 }
 
-export function actualizarAlumno(id, cambios) {
-  return updateDoc(doc(db, 'alumnos', id), cambios)
+export function actualizarAlumno(id, datos) {
+  return updateDoc(doc(db, 'alumnos', id), normalizarAlumno(datos))
 }
 
 export function archivarAlumno(id, activo) {

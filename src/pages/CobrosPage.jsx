@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
-import { subscribeTodosMovimientos, calcularSaldo, montoAVivi, montoPropio } from '../data/movimientos'
-import { subscribeEntregasVivi } from '../data/entregasVivi'
+import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
+import {
+  subscribeTodosMovimientos,
+  calcularSaldo,
+  montoViviDePago,
+  montoPropioDePago,
+} from '../data/movimientos'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
@@ -12,8 +17,8 @@ const fmtMoney = (n) =>
 
 export default function CobrosPage() {
   const [alumnos, setAlumnos] = useState([])
+  const [actividades, setActividades] = useState([])
   const [movimientos, setMovimientos] = useState([])
-  const [entregas, setEntregas] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
@@ -22,14 +27,15 @@ export default function CobrosPage() {
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
+  useEffect(() => subscribeActividades(setActividades), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
-  useEffect(() => subscribeEntregasVivi(setEntregas), [])
 
   const activos = alumnos.filter((a) => a.activo !== false)
 
   const filasCompletas = activos.map((a) => {
     const movsAlumno = movimientos.filter((m) => m.alumnoId === a.id)
-    return { alumno: a, saldo: calcularSaldo(a, movsAlumno) }
+    const montoMensual = montoMensualEfectivo(a, actividades)
+    return { alumno: a, saldo: calcularSaldo({ ...a, montoMensual }, movsAlumno) }
   })
 
   const filas = filasCompletas
@@ -42,11 +48,19 @@ export default function CobrosPage() {
   const pagosDelMes = movimientos.filter(
     (m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mesActual),
   )
-  const totalCobradoMes = pagosDelMes.reduce((acc, m) => acc + montoPropio(m), 0)
-  const totalAbonadoAViviMes = pagosDelMes.reduce((acc, m) => acc + montoAVivi(m), 0)
-  const totalEntregadoAViviMes = entregas
-    .filter((e) => (e.fecha || '').startsWith(mesActual))
-    .reduce((acc, e) => acc + e.monto, 0)
+  const pagosMiosDelMes = pagosDelMes.filter((m) => !m.abonadoAVivi)
+  const pagosDeViviDelMes = pagosDelMes.filter((m) => m.abonadoAVivi)
+
+  // Lo que yo cobré de las alumnas (monto bruto, antes de descontar la parte de Vivi).
+  const cobradoPorMi = pagosMiosDelMes.reduce((acc, m) => acc + m.monto, 0)
+  // De lo que cobré yo, la parte que le corresponde a Vivi y que le tengo que entregar.
+  const lePagueAVivi = pagosMiosDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
+  // De lo que cobró Vivi directamente, la parte que es mía y ella me debe.
+  const mePagoVivi = pagosDeViviDelMes.reduce((acc, m) => acc + montoPropioDePago(m), 0)
+  // De lo que cobró Vivi directamente, su propia parte (lo que le quedó a ella).
+  const lePagaronAVivi = pagosDeViviDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
+  // Todo lo que le corresponde a Vivi en total (de lo que cobró ella + de lo que cobré yo).
+  const totalCobradoPorVivi = lePagaronAVivi + lePagueAVivi
 
   const totalAdeudado = filasCompletas.reduce((acc, f) => acc + Math.max(f.saldo, 0), 0)
 
@@ -80,32 +94,34 @@ export default function CobrosPage() {
 
       <div className="stats-row">
         <div className="stat-tile">
-          <div className="stat-label">Cobrado este mes</div>
+          <div className="stat-label">Cobrado por mí</div>
           <div className="stat-value" style={{ color: 'var(--success)' }}>
-            {fmtMoney(totalCobradoMes)}
+            {fmtMoney(cobradoPorMi)}
           </div>
         </div>
         <div className="stat-tile stat-tile-wide">
           <div className="stat-label">Vivi</div>
           <div className="stat-split">
             <div>
-              <div className="stat-split-label">Abonado a Vivi</div>
-              <div className="stat-split-value">{fmtMoney(totalAbonadoAViviMes)}</div>
+              <div className="stat-split-label">Me pagó Vivi</div>
+              <div className="stat-split-value">{fmtMoney(mePagoVivi)}</div>
             </div>
             <div>
-              <div className="stat-split-label">Entregado a Vivi</div>
-              <div className="stat-split-value">{fmtMoney(totalEntregadoAViviMes)}</div>
+              <div className="stat-split-label">Le pagaron a Vivi</div>
+              <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
+            </div>
+            <div>
+              <div className="stat-split-label">Le pagué a Vivi</div>
+              <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
             </div>
             <div className="stat-split-total">
               <div className="stat-split-label">Total cobrado por Vivi</div>
-              <div className="stat-split-value">
-                {fmtMoney(totalAbonadoAViviMes + totalEntregadoAViviMes)}
-              </div>
+              <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
             </div>
           </div>
         </div>
         <div className="stat-tile">
-          <div className="stat-label">Adeudado total</div>
+          <div className="stat-label">Pendiente por cobrar</div>
           <div className="stat-value" style={{ color: 'var(--danger)' }}>
             {fmtMoney(totalAdeudado)}
           </div>
@@ -167,7 +183,7 @@ export default function CobrosPage() {
                 ✕
               </button>
             </div>
-            <CtaCteDetalle alumno={seleccionado} sinTarjeta />
+            <CtaCteDetalle alumno={seleccionado} actividades={actividades} sinTarjeta />
           </div>
         </div>
       )}

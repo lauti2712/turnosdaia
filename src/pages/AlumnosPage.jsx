@@ -7,6 +7,7 @@ import {
   eliminarAlumno,
   coincideBusqueda,
 } from '../data/alumnos'
+import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import AlumnoModal from '../components/AlumnoModal'
 
 const fmtMoney = (n) =>
@@ -14,12 +15,16 @@ const fmtMoney = (n) =>
 
 export default function AlumnosPage() {
   const [alumnos, setAlumnos] = useState([])
+  const [actividades, setActividades] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [mostrarInactivos, setMostrarInactivos] = useState(false)
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
+  useEffect(() => subscribeActividades(setActividades), [])
+
+  const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
 
   async function handleSave(datos) {
     if (editando) {
@@ -88,6 +93,7 @@ export default function AlumnosPage() {
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Actividad</th>
                 <th>Días/semana</th>
                 <th>Monto mensual</th>
                 <th>Fecha inicio</th>
@@ -101,8 +107,18 @@ export default function AlumnosPage() {
                   <td>
                     {a.apellido}, {a.nombre}
                   </td>
+                  <td>
+                    {actividadesPorId[a.actividadId]?.nombre || <span className="muted">—</span>}
+                  </td>
                   <td>{a.diasPorSemana}</td>
-                  <td>{fmtMoney(a.montoMensual)}</td>
+                  <td>
+                    {fmtMoney(montoMensualEfectivo(a, actividades))}
+                    {a.precioManual != null && (
+                      <span className="badge badge-warning" style={{ marginLeft: 6 }}>
+                        Manual
+                      </span>
+                    )}
+                  </td>
                   <td>{a.fechaInicio}</td>
                   <td>
                     {a.activo === false ? (
@@ -138,6 +154,7 @@ export default function AlumnosPage() {
       {modalAbierto && (
         <AlumnoModal
           alumno={editando}
+          actividades={actividades}
           onSave={handleSave}
           onClose={() => setModalAbierto(false)}
         />

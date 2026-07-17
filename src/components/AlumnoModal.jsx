@@ -1,20 +1,32 @@
 import { useState } from 'react'
+import { montoMensualEfectivo } from '../data/actividades'
+
+const fmtMoney = (n) =>
+  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
 const ALUMNO_VACIO = {
   nombre: '',
   apellido: '',
-  diasPorSemana: 1,
-  montoMensual: '',
+  diasPorSemana: 2,
+  actividadId: '',
+  precioManual: '',
   fechaInicio: new Date().toISOString().slice(0, 10),
   extra: [],
 }
 
-export default function AlumnoModal({ alumno, onSave, onClose }) {
+export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
   const [form, setForm] = useState(
     alumno
-      ? { ...ALUMNO_VACIO, ...alumno, extra: alumno.extra ? [...alumno.extra] : [] }
+      ? {
+          ...ALUMNO_VACIO,
+          ...alumno,
+          actividadId: alumno.actividadId || '',
+          precioManual: alumno.precioManual ?? '',
+          extra: alumno.extra ? [...alumno.extra] : [],
+        }
       : ALUMNO_VACIO,
   )
+  const [usarPrecioManual, setUsarPrecioManual] = useState(alumno?.precioManual != null)
   const [guardando, setGuardando] = useState(false)
 
   function setCampo(campo, valor) {
@@ -37,12 +49,18 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
     setForm((f) => ({ ...f, extra: f.extra.filter((_, idx) => idx !== i) }))
   }
 
+  const precioCalculado = montoMensualEfectivo(
+    { actividadId: form.actividadId, diasPorSemana: form.diasPorSemana, precioManual: null },
+    actividades,
+  )
+
   async function handleSubmit(e) {
     e.preventDefault()
     setGuardando(true)
     try {
       await onSave({
         ...form,
+        precioManual: usarPrecioManual ? form.precioManual : '',
         extra: form.extra.filter((x) => x.clave.trim()),
       })
       onClose()
@@ -76,6 +94,20 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
             </div>
             <div className="form-row">
               <div className="field">
+                <label>Actividad</label>
+                <select
+                  value={form.actividadId}
+                  onChange={(e) => setCampo('actividadId', e.target.value)}
+                >
+                  <option value="">Sin asignar</option>
+                  {actividades.map((act) => (
+                    <option key={act.id} value={act.id}>
+                      {act.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
                 <label>Días por semana</label>
                 <input
                   type="number"
@@ -85,17 +117,49 @@ export default function AlumnoModal({ alumno, onSave, onClose }) {
                   onChange={(e) => setCampo('diasPorSemana', e.target.value)}
                 />
               </div>
-              <div className="field">
-                <label>Monto mensual</label>
+            </div>
+
+            <div className="field">
+              <label>Precio mensual</label>
+              {!usarPrecioManual ? (
+                <div
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: '8px 10px',
+                  }}
+                >
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>
+                    {fmtMoney(precioCalculado)}
+                  </div>
+                  <div className="muted" style={{ fontSize: '0.75rem' }}>
+                    Según la tabla de precios de la actividad. Cambia sola si se actualiza la
+                    tarifa.
+                  </div>
+                </div>
+              ) : (
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={form.montoMensual}
-                  onChange={(e) => setCampo('montoMensual', e.target.value)}
+                  value={form.precioManual}
+                  onChange={(e) => setCampo('precioManual', e.target.value)}
                 />
-              </div>
+              )}
+              <label
+                className="muted"
+                style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.82rem', marginTop: 6 }}
+              >
+                <input
+                  type="checkbox"
+                  style={{ width: 'auto' }}
+                  checked={usarPrecioManual}
+                  onChange={(e) => setUsarPrecioManual(e.target.checked)}
+                />
+                Usar un monto manual distinto (beca, descuento, arreglo especial)
+              </label>
             </div>
+
             <div className="field">
               <label>Fecha de inicio</label>
               <input

@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { registrarPago, registrarAjuste } from '../data/movimientos'
+import { porcentajeViviDeAlumno } from '../data/actividades'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
-export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardado }) {
+export default function MovimientoForm({ alumno, actividades = [], tipoInicial = 'pago', onGuardado }) {
   const [tipo, setTipo] = useState(tipoInicial)
   const [monto, setMonto] = useState(alumno.montoMensual || '')
   const [fecha, setFecha] = useState(hoy())
   const [formaPago, setFormaPago] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [abonadoAVivi, setAbonadoAVivi] = useState(false)
-  const [porcentajeVivi, setPorcentajeVivi] = useState(50)
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
     setMonto(alumno.montoMensual || '')
   }, [alumno.id])
+
+  const porcentajeVivi = porcentajeViviDeAlumno(alumno, actividades)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -38,7 +40,6 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
       setMonto(alumno.montoMensual || '')
       setDescripcion('')
       setAbonadoAVivi(false)
-      setPorcentajeVivi(50)
       onGuardado?.()
     } finally {
       setGuardando(false)
@@ -107,29 +108,10 @@ export default function MovimientoForm({ alumno, tipoInicial = 'pago', onGuardad
             />
             Abonado a Vivi (lo cobró ella directamente)
           </label>
-
-          {abonadoAVivi && (
-            <div style={{ display: 'flex', gap: 16, marginTop: 8, marginLeft: 22 }}>
-              <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.85rem' }}>
-                <input
-                  type="radio"
-                  style={{ width: 'auto' }}
-                  checked={porcentajeVivi === 50}
-                  onChange={() => setPorcentajeVivi(50)}
-                />
-                50% a Vivi / 50% propio
-              </label>
-              <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.85rem' }}>
-                <input
-                  type="radio"
-                  style={{ width: 'auto' }}
-                  checked={porcentajeVivi === 60}
-                  onChange={() => setPorcentajeVivi(60)}
-                />
-                60% a Vivi / 40% propio
-              </label>
-            </div>
-          )}
+          <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
+            De este pago, {porcentajeVivi}% le corresponde a Vivi según su actividad
+            {abonadoAVivi ? ' (ella te debe el resto)' : ' (se lo tenés que entregar)'}.
+          </div>
         </div>
       )}
       <div style={{ marginTop: 10 }}>
