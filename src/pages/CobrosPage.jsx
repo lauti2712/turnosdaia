@@ -93,10 +93,19 @@ export default function CobrosPage() {
       </div>
 
       <div className="stats-row">
-        <div className="stat-tile">
-          <div className="stat-label">Cobrado por mí</div>
-          <div className="stat-value" style={{ color: 'var(--success)' }}>
-            {fmtMoney(cobradoPorMi)}
+        <div className="stat-tile stat-tile-wide">
+          <div className="stat-label">Lo mío</div>
+          <div className="stat-split">
+            <div>
+              <div className="stat-split-label">Cobrado por mí</div>
+              <div className="stat-split-value" style={{ color: 'var(--success)' }}>
+                {fmtMoney(cobradoPorMi)}
+              </div>
+            </div>
+            <div>
+              <div className="stat-split-label">Le pagué a Vivi</div>
+              <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
+            </div>
           </div>
         </div>
         <div className="stat-tile stat-tile-wide">
@@ -109,10 +118,6 @@ export default function CobrosPage() {
             <div>
               <div className="stat-split-label">Le pagaron a Vivi</div>
               <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
-            </div>
-            <div>
-              <div className="stat-split-label">Le pagué a Vivi</div>
-              <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
             </div>
             <div className="stat-split-total">
               <div className="stat-split-label">Total cobrado por Vivi</div>
