@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
 import { subscribeTodosMovimientos, eliminarMovimiento } from '../data/movimientos'
+import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -27,14 +28,17 @@ function etiquetaMes(mesId) {
 }
 
 export default function HistorialCobrosModal({ onClose }) {
+  const { espacioActualId, espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [alumnos, setAlumnos] = useState([])
-  const [movimientos, setMovimientos] = useState([])
+  const [movimientosTodos, setMovimientosTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
-  useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
+  useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
+  const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
 
   const delMes = movimientos.filter((m) => (m.fecha || '').startsWith(mes))
   const totalPagos = delMes.filter((m) => m.tipo === 'pago').reduce((acc, m) => acc + m.monto, 0)
@@ -117,7 +121,7 @@ export default function HistorialCobrosModal({ onClose }) {
                         )}
                         {m.abonadoAVivi && (
                           <span className="badge badge-warning" style={{ marginLeft: 4 }}>
-                            Vivi {m.porcentajeVivi ?? 100}%
+                            {socioNombre} {m.porcentajeVivi ?? 100}%
                           </span>
                         )}
                       </td>

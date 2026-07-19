@@ -39,8 +39,9 @@ function normalizarAlumno({
   }
 }
 
-export function crearAlumno(datos) {
+export function crearAlumno({ espacioId, ...datos }) {
   return addDoc(alumnosRef, {
+    espacioId,
     ...normalizarAlumno(datos),
     activo: true,
     creadoTs: Date.now(),

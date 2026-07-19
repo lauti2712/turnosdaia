@@ -4,13 +4,16 @@ import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import { registrarPagoVivi } from '../data/pagosVivi'
 import AlumnoBuscador from './AlumnoBuscador'
 import MovimientoForm from './MovimientoForm'
+import { useEspacio } from '../context/EspacioContext'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
 export default function NuevoPagoModal({ onClose }) {
+  const { espacioActualId, espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [destino, setDestino] = useState('alumno') // 'alumno' | 'vivi'
-  const [alumnos, setAlumnos] = useState([])
-  const [actividades, setActividades] = useState([])
+  const [alumnosTodos, setAlumnosTodos] = useState([])
+  const [actividadesTodas, setActividadesTodas] = useState([])
   const [alumno, setAlumno] = useState(null)
 
   const [montoVivi, setMontoVivi] = useState('')
@@ -18,10 +21,11 @@ export default function NuevoPagoModal({ onClose }) {
   const [descripcionVivi, setDescripcionVivi] = useState('')
   const [guardandoVivi, setGuardandoVivi] = useState(false)
 
-  useEffect(() => subscribeAlumnos(setAlumnos), [])
-  useEffect(() => subscribeActividades(setActividades), [])
+  useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
+  useEffect(() => subscribeActividades(setActividadesTodas), [])
 
-  const activos = alumnos.filter((a) => a.activo !== false)
+  const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
+  const activos = alumnosTodos.filter((a) => a.espacioId === espacioActualId && a.activo !== false)
   const alumnoConPrecio = alumno
     ? { ...alumno, montoMensual: montoMensualEfectivo(alumno, actividades) }
     : null
@@ -31,7 +35,12 @@ export default function NuevoPagoModal({ onClose }) {
     if (!montoVivi) return
     setGuardandoVivi(true)
     try {
-      await registrarPagoVivi({ monto: montoVivi, fecha: fechaVivi, descripcion: descripcionVivi })
+      await registrarPagoVivi({
+        espacioId: espacioActualId,
+        monto: montoVivi,
+        fecha: fechaVivi,
+        descripcion: descripcionVivi,
+      })
       onClose()
     } finally {
       setGuardandoVivi(false)
@@ -61,7 +70,7 @@ export default function NuevoPagoModal({ onClose }) {
             className={`btn ${destino === 'vivi' ? 'btn-primary' : ''}`}
             onClick={() => setDestino('vivi')}
           >
-            A Vivi
+            A {socioNombre}
           </button>
         </div>
 
@@ -108,7 +117,7 @@ export default function NuevoPagoModal({ onClose }) {
         ) : (
           <form onSubmit={handleSubmitVivi}>
             <p className="muted" style={{ fontSize: '0.85rem', marginTop: 0 }}>
-              Registrá un pago que le hacés a Vivi de lo que fuiste cobrando, cuando vos quieras.
+              Registrá un pago que le hacés a {socioNombre} de lo que fuiste cobrando, cuando vos quieras.
             </p>
             <div className="form-row">
               <div className="field">
@@ -138,7 +147,7 @@ export default function NuevoPagoModal({ onClose }) {
             </div>
             <div style={{ marginTop: 10 }}>
               <button type="submit" className="btn btn-primary" disabled={guardandoVivi}>
-                Registrar pago a Vivi
+                Registrar pago a {socioNombre}
               </button>
             </div>
           </form>

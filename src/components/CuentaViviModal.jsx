@@ -3,6 +3,7 @@ import { subscribeAlumnos } from '../data/alumnos'
 import { subscribeActividades } from '../data/actividades'
 import { subscribeTodosMovimientos, montoViviDePago, montoPropioDePago } from '../data/movimientos'
 import { subscribePagosVivi, eliminarPagoVivi } from '../data/pagosVivi'
+import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -29,19 +30,23 @@ function etiquetaMes(mesId) {
 }
 
 export default function CuentaViviModal({ onClose }) {
+  const { espacioActualId, espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [alumnos, setAlumnos] = useState([])
   const [actividades, setActividades] = useState([])
-  const [movimientos, setMovimientos] = useState([])
-  const [pagosVivi, setPagosVivi] = useState([])
+  const [movimientosTodos, setMovimientosTodos] = useState([])
+  const [pagosViviTodos, setPagosViviTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeActividades(setActividades), [])
-  useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
-  useEffect(() => subscribePagosVivi(setPagosVivi), [])
+  useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
+  useEffect(() => subscribePagosVivi(setPagosViviTodos), [])
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
+  const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
+  const pagosVivi = pagosViviTodos.filter((p) => p.espacioId === espacioActualId)
 
   const pagosDelMes = movimientos.filter(
     (m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mes),
@@ -63,7 +68,7 @@ export default function CuentaViviModal({ onClose }) {
         fecha: m.fecha,
         alumna: alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)',
         actividad: actividad?.nombre || '—',
-        cobro: m.abonadoAVivi ? 'Vivi' : 'Yo',
+        cobro: m.abonadoAVivi ? 'socio' : 'yo',
         monto: m.monto,
         porcentaje: `${m.porcentajeVivi ?? 0}%`,
         deVivi: montoViviDePago(m),
@@ -76,7 +81,7 @@ export default function CuentaViviModal({ onClose }) {
       fecha: p.fecha,
       alumna: '—',
       actividad: '—',
-      cobro: 'Le pagué a Vivi',
+      cobro: `Le pagué a ${socioNombre}`,
       monto: p.monto,
       porcentaje: '—',
       deVivi: p.monto,
@@ -87,7 +92,7 @@ export default function CuentaViviModal({ onClose }) {
   ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
   async function handleEliminar(fila) {
-    if (confirm(`¿Eliminar este pago a Vivi de ${fmtMoney(fila.monto)}?`)) {
+    if (confirm(`¿Eliminar este pago a ${socioNombre} de ${fmtMoney(fila.monto)}?`)) {
       await fila.onEliminar()
     }
   }
@@ -96,7 +101,7 @@ export default function CuentaViviModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="page-title" style={{ marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Cuenta de Vivi</h3>
+          <h3 style={{ margin: 0 }}>Cuenta de {socioNombre}</h3>
           <button className="icon-btn" aria-label="Cerrar" onClick={onClose}>
             ✕
           </button>
@@ -116,19 +121,19 @@ export default function CuentaViviModal({ onClose }) {
           <div className="stat-tile stat-tile-wide">
             <div className="stat-split">
               <div>
-                <div className="stat-split-label">Me pagó Vivi</div>
+                <div className="stat-split-label">Me pagó {socioNombre}</div>
                 <div className="stat-split-value">{fmtMoney(mePagoVivi)}</div>
               </div>
               <div>
-                <div className="stat-split-label">Le pagaron a Vivi</div>
+                <div className="stat-split-label">Le pagaron a {socioNombre}</div>
                 <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
               </div>
               <div>
-                <div className="stat-split-label">Le pagué a Vivi</div>
+                <div className="stat-split-label">Le pagué a {socioNombre}</div>
                 <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
               </div>
               <div className="stat-split-total">
-                <div className="stat-split-label">Total cobrado por Vivi</div>
+                <div className="stat-split-label">Total cobrado por {socioNombre}</div>
                 <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
               </div>
             </div>
@@ -136,7 +141,7 @@ export default function CuentaViviModal({ onClose }) {
         </div>
 
         {filas.length === 0 ? (
-          <div className="empty-state">No hay movimientos de Vivi en {etiquetaMes(mes)}.</div>
+          <div className="empty-state">No hay movimientos de {socioNombre} en {etiquetaMes(mes)}.</div>
         ) : (
           <div className="scroll-x">
             <table>
@@ -147,8 +152,8 @@ export default function CuentaViviModal({ onClose }) {
                   <th>Actividad</th>
                   <th>Cobró</th>
                   <th>Monto</th>
-                  <th>% Vivi</th>
-                  <th>De Vivi</th>
+                  <th>% {socioNombre}</th>
+                  <th>De {socioNombre}</th>
                   <th>Propio</th>
                   <th></th>
                 </tr>
@@ -160,9 +165,9 @@ export default function CuentaViviModal({ onClose }) {
                     <td>{f.alumna}</td>
                     <td className="muted">{f.actividad}</td>
                     <td>
-                      {f.cobro === 'Vivi' ? (
-                        <span className="badge badge-warning">Vivi</span>
-                      ) : f.cobro === 'Yo' ? (
+                      {f.cobro === 'socio' ? (
+                        <span className="badge badge-warning">{socioNombre}</span>
+                      ) : f.cobro === 'yo' ? (
                         <span className="badge badge-success">Yo</span>
                       ) : (
                         <span className="badge badge-danger">{f.cobro}</span>

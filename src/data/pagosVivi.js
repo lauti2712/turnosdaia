@@ -20,8 +20,9 @@ export function subscribePagosVivi(callback) {
   })
 }
 
-export function registrarPagoVivi({ monto, fecha, descripcion }) {
+export function registrarPagoVivi({ espacioId, monto, fecha, descripcion }) {
   return addDoc(pagosViviRef, {
+    espacioId,
     monto: Number(monto) || 0,
     fecha,
     descripcion: descripcion || '',

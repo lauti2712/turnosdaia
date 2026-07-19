@@ -48,8 +48,9 @@ export function subscribeTurnos(callback) {
   })
 }
 
-export function crearTurno({ actividad, diasActivos, horario, cupoMaximo }) {
+export function crearTurno({ espacioId, actividad, diasActivos, horario, cupoMaximo }) {
   return addDoc(turnosRef, {
+    espacioId,
     actividad: actividad || '',
     diasActivos: diasActivos || [],
     horario: horario || '',

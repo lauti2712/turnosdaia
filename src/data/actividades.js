@@ -30,8 +30,9 @@ export function subscribeActividades(callback) {
   })
 }
 
-export function crearActividad({ nombre, porcentajeVivi, precios }) {
+export function crearActividad({ espacioId, nombre, porcentajeVivi, precios }) {
   return addDoc(actividadesRef, {
+    espacioId,
     nombre,
     porcentajeVivi: Number(porcentajeVivi) || 0,
     precios: normalizarPrecios(precios),

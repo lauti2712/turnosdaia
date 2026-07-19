@@ -7,22 +7,27 @@ import {
   DIAS_PRECIO,
 } from '../data/actividades'
 import ActividadModal from '../components/ActividadModal'
+import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
 export default function ActividadesPage() {
-  const [actividades, setActividades] = useState([])
+  const { espacioActualId, espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const [actividadesTodas, setActividadesTodas] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
 
-  useEffect(() => subscribeActividades(setActividades), [])
+  useEffect(() => subscribeActividades(setActividadesTodas), [])
+
+  const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
 
   async function handleSave(datos) {
     if (editando) {
       await actualizarActividad(editando.id, datos)
     } else {
-      await crearActividad(datos)
+      await crearActividad({ ...datos, espacioId: espacioActualId })
     }
   }
 
@@ -67,7 +72,7 @@ export default function ActividadesPage() {
               <div className="page-title" style={{ marginBottom: 10 }}>
                 <div>
                   <strong>{act.nombre}</strong>
-                  <span className="muted"> · {act.porcentajeVivi}% para Vivi</span>
+                  <span className="muted"> · {act.porcentajeVivi}% para {socioNombre}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button className="btn btn-sm" onClick={() => abrirEditar(act)}>

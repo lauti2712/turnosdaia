@@ -9,11 +9,14 @@ import {
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
 import MovimientoForm from './MovimientoForm'
+import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
 export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false }) {
+  const { espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [movimientos, setMovimientos] = useState([])
 
   useEffect(() => subscribeMovimientos(alumno.id, setMovimientos), [alumno.id])
@@ -71,7 +74,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
                   )}
                   {m.tipo === 'pago' && m.abonadoAVivi && (
                     <span className="badge badge-warning" style={{ marginLeft: 4 }}>
-                      Cobró Vivi
+                      Cobró {socioNombre}
                     </span>
                   )}
                 </td>
@@ -79,7 +82,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
                 <td className="muted">
                   {m.tipo === 'pago' && m.abonadoAVivi ? (
                     <>
-                      {m.porcentajeVivi ?? 0}% Vivi ({fmtMoney(montoViviDePago(m))}) · propio (
+                      {m.porcentajeVivi ?? 0}% {socioNombre} ({fmtMoney(montoViviDePago(m))}) · propio (
                       {fmtMoney(montoPropioDePago(m))})
                       {(m.formaPago || m.descripcion) &&
                         ' · ' + [m.formaPago, m.descripcion].filter(Boolean).join(' · ')}

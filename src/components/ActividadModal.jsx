@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { DIAS_PRECIO } from '../data/actividades'
+import { useEspacio } from '../context/EspacioContext'
 
 const ACTIVIDAD_VACIA = { nombre: '', porcentajeVivi: 50, precios: {} }
 
 export default function ActividadModal({ actividad, onSave, onClose }) {
+  const { espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [form, setForm] = useState(
     actividad
       ? { ...ACTIVIDAD_VACIA, ...actividad, precios: { ...actividad.precios } }
@@ -48,7 +51,7 @@ export default function ActividadModal({ actividad, onSave, onClose }) {
                 />
               </div>
               <div className="field">
-                <label>% para Vivi</label>
+                <label>% para {socioNombre}</label>
                 <input
                   type="number"
                   min="0"

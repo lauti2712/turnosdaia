@@ -31,6 +31,7 @@ export function subscribeTodosMovimientos(callback) {
 }
 
 export function registrarPago({
+  espacioId,
   alumnoId,
   monto,
   fecha,
@@ -40,6 +41,7 @@ export function registrarPago({
   porcentajeVivi,
 }) {
   return addDoc(movimientosRef, {
+    espacioId,
     alumnoId,
     tipo: 'pago',
     monto: Number(monto) || 0,
@@ -69,8 +71,9 @@ export function montoPropioDePago(movimiento) {
   return movimiento.monto * (1 - pct / 100)
 }
 
-export function registrarAjuste({ alumnoId, monto, fecha, descripcion }) {
+export function registrarAjuste({ espacioId, alumnoId, monto, fecha, descripcion }) {
   return addDoc(movimientosRef, {
+    espacioId,
     alumnoId,
     tipo: 'ajuste',
     monto: Number(monto) || 0, // con signo: + aumenta deuda, - la reduce

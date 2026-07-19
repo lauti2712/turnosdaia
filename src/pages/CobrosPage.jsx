@@ -12,15 +12,18 @@ import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
 import CuentaViviModal from '../components/CuentaViviModal'
+import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
 export default function CobrosPage() {
-  const [alumnos, setAlumnos] = useState([])
-  const [actividades, setActividades] = useState([])
-  const [movimientos, setMovimientos] = useState([])
-  const [pagosVivi, setPagosVivi] = useState([])
+  const { espacioActualId, espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const [alumnosTodos, setAlumnosTodos] = useState([])
+  const [actividadesTodas, setActividadesTodas] = useState([])
+  const [movimientosTodos, setMovimientosTodos] = useState([])
+  const [pagosViviTodos, setPagosViviTodos] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
@@ -28,10 +31,15 @@ export default function CobrosPage() {
   const [modalViviAbierto, setModalViviAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
 
-  useEffect(() => subscribeAlumnos(setAlumnos), [])
-  useEffect(() => subscribeActividades(setActividades), [])
-  useEffect(() => subscribeTodosMovimientos(setMovimientos), [])
-  useEffect(() => subscribePagosVivi(setPagosVivi), [])
+  useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
+  useEffect(() => subscribeActividades(setActividadesTodas), [])
+  useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
+  useEffect(() => subscribePagosVivi(setPagosViviTodos), [])
+
+  const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
+  const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
+  const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
+  const pagosVivi = pagosViviTodos.filter((p) => p.espacioId === espacioActualId)
 
   const activos = alumnos.filter((a) => a.activo !== false)
 
@@ -94,7 +102,7 @@ export default function CobrosPage() {
             Ver historial
           </button>
           <button className="btn" onClick={() => setModalViviAbierto(true)}>
-            Cuenta de Vivi
+            Cuenta de {socioNombre}
           </button>
         </div>
       </div>
@@ -110,24 +118,24 @@ export default function CobrosPage() {
               </div>
             </div>
             <div>
-              <div className="stat-split-label">Le pagué a Vivi</div>
+              <div className="stat-split-label">Le pagué a {socioNombre}</div>
               <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
             </div>
           </div>
         </div>
         <div className="stat-tile stat-tile-wide">
-          <div className="stat-label">Vivi</div>
+          <div className="stat-label">{socioNombre}</div>
           <div className="stat-split">
             <div>
-              <div className="stat-split-label">Me pagó Vivi</div>
+              <div className="stat-split-label">Me pagó {socioNombre}</div>
               <div className="stat-split-value">{fmtMoney(mePagoVivi)}</div>
             </div>
             <div>
-              <div className="stat-split-label">Le pagaron a Vivi</div>
+              <div className="stat-split-label">Le pagaron a {socioNombre}</div>
               <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
             </div>
             <div className="stat-split-total">
-              <div className="stat-split-label">Total cobrado por Vivi</div>
+              <div className="stat-split-label">Total cobrado por {socioNombre}</div>
               <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
             </div>
           </div>

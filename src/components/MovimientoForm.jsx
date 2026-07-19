@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { registrarPago, registrarAjuste } from '../data/movimientos'
 import { porcentajeViviDeAlumno } from '../data/actividades'
+import { useEspacio } from '../context/EspacioContext'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
 export default function MovimientoForm({ alumno, actividades = [], tipoInicial = 'pago', onGuardado }) {
+  const { espacioActual } = useEspacio()
+  const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [tipo, setTipo] = useState(tipoInicial)
   const [monto, setMonto] = useState(alumno.montoMensual || '')
   const [fecha, setFecha] = useState(hoy())
@@ -26,6 +29,7 @@ export default function MovimientoForm({ alumno, actividades = [], tipoInicial =
     try {
       if (tipo === 'pago') {
         await registrarPago({
+          espacioId: alumno.espacioId,
           alumnoId: alumno.id,
           monto,
           fecha,
@@ -35,7 +39,7 @@ export default function MovimientoForm({ alumno, actividades = [], tipoInicial =
           porcentajeVivi,
         })
       } else {
-        await registrarAjuste({ alumnoId: alumno.id, monto, fecha, descripcion })
+        await registrarAjuste({ espacioId: alumno.espacioId, alumnoId: alumno.id, monto, fecha, descripcion })
       }
       setMonto(alumno.montoMensual || '')
       setDescripcion('')
@@ -106,13 +110,13 @@ export default function MovimientoForm({ alumno, actividades = [], tipoInicial =
               checked={abonadoAVivi}
               onChange={(e) => setAbonadoAVivi(e.target.checked)}
             />
-            Abonado a Vivi (lo cobró ella directamente)
+            Abonado a {socioNombre} (lo cobró directamente)
           </label>
           <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
-            De este pago, {porcentajeVivi}% le corresponde a Vivi según su actividad
+            De este pago, {porcentajeVivi}% le corresponde a {socioNombre} según su actividad
             {abonadoAVivi
-              ? ' (ella te debe el resto).'
-              : ' — se lo pagás cuando quieras desde "Nuevo pago" → "A Vivi".'}
+              ? ' (te debe el resto).'
+              : ` — se lo pagás cuando quieras desde "Nuevo pago" → "A ${socioNombre}".`}
           </div>
         </div>
       )}

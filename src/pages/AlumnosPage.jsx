@@ -9,28 +9,32 @@ import {
 } from '../data/alumnos'
 import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import AlumnoModal from '../components/AlumnoModal'
+import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
 export default function AlumnosPage() {
-  const [alumnos, setAlumnos] = useState([])
-  const [actividades, setActividades] = useState([])
+  const { espacioActualId } = useEspacio()
+  const [alumnosTodos, setAlumnosTodos] = useState([])
+  const [actividadesTodas, setActividadesTodas] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [mostrarInactivos, setMostrarInactivos] = useState(false)
   const [busqueda, setBusqueda] = useState('')
 
-  useEffect(() => subscribeAlumnos(setAlumnos), [])
-  useEffect(() => subscribeActividades(setActividades), [])
+  useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
+  useEffect(() => subscribeActividades(setActividadesTodas), [])
 
+  const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
+  const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
 
   async function handleSave(datos) {
     if (editando) {
       await actualizarAlumno(editando.id, datos)
     } else {
-      await crearAlumno(datos)
+      await crearAlumno({ ...datos, espacioId: espacioActualId })
     }
   }
 

@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
 import { DIAS, subscribeTurnos, crearTurno, actualizarTurno } from '../data/turnos'
 import { subscribeAlumnos, crearAlumno } from '../data/alumnos'
+import { subscribeActividades } from '../data/actividades'
 import TurnoCard from '../components/TurnoCard'
 import TurnoModal from '../components/TurnoModal'
 import AlumnoModal from '../components/AlumnoModal'
 import DisponibilidadGrid from '../components/DisponibilidadGrid'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { useEspacio } from '../context/EspacioContext'
 
 export default function TurnosPage() {
-  const [turnos, setTurnos] = useState([])
-  const [alumnos, setAlumnos] = useState([])
+  const { espacioActualId } = useEspacio()
+  const [turnosTodos, setTurnosTodos] = useState([])
+  const [alumnosTodos, setAlumnosTodos] = useState([])
+  const [actividadesTodas, setActividadesTodas] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [modalAlumnoAbierto, setModalAlumnoAbierto] = useState(false)
@@ -19,8 +23,13 @@ export default function TurnosPage() {
   const [mostrarDisponibilidad, setMostrarDisponibilidad] = useState(true)
   const isMobile = useIsMobile()
 
-  useEffect(() => subscribeTurnos(setTurnos), [])
-  useEffect(() => subscribeAlumnos(setAlumnos), [])
+  useEffect(() => subscribeTurnos(setTurnosTodos), [])
+  useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
+  useEffect(() => subscribeActividades(setActividadesTodas), [])
+
+  const turnos = turnosTodos.filter((t) => t.espacioId === espacioActualId)
+  const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
+  const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
   const alumnosActivos = alumnos.filter((a) => a.activo !== false)
@@ -38,7 +47,7 @@ export default function TurnosPage() {
     if (editando) {
       await actualizarTurno(editando.id, datos)
     } else {
-      await crearTurno(datos)
+      await crearTurno({ ...datos, espacioId: espacioActualId })
     }
   }
 
@@ -131,7 +140,11 @@ export default function TurnosPage() {
       )}
 
       {modalAlumnoAbierto && (
-        <AlumnoModal onSave={crearAlumno} onClose={() => setModalAlumnoAbierto(false)} />
+        <AlumnoModal
+          actividades={actividades}
+          onSave={(datos) => crearAlumno({ ...datos, espacioId: espacioActualId })}
+          onClose={() => setModalAlumnoAbierto(false)}
+        />
       )}
 
       {modalPagoAbierto && <NuevoPagoModal onClose={() => setModalPagoAbierto(false)} />}
