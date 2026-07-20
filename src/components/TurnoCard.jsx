@@ -105,11 +105,19 @@ export default function TurnoCard({
           const hayCupo = asignados.length < turno.cupoMaximo
           const idsAsignados = new Set(asignados)
           const disponibles = alumnosActivos.filter((a) => !idsAsignados.has(a.id))
+          const asignadosOrdenados = [...asignados].sort((a, b) => {
+            const alumnoA = alumnosPorId[a]
+            const alumnoB = alumnosPorId[b]
+            if (!alumnoA || !alumnoB) return 0
+            return `${alumnoA.apellido}, ${alumnoA.nombre}`.localeCompare(
+              `${alumnoB.apellido}, ${alumnoB.nombre}`,
+            )
+          })
 
           return (
             <div className="turnos-grid-col" key={dia}>
               <div className="turnos-grid-col-header">{DIAS_LABEL[dia]}</div>
-              {asignados.map((alumnoId) => {
+              {asignadosOrdenados.map((alumnoId) => {
                 const alumno = alumnosPorId[alumnoId]
                 const asignadosSemana = diasAsignadosPorAlumno[alumnoId] || 0
                 const objetivo = alumno?.diasPorSemana || 0
