@@ -4,6 +4,8 @@ import {
   crearActividad,
   actualizarActividad,
   eliminarActividad,
+  precioVigente,
+  mesActualId,
   DIAS_PRECIO,
 } from '../data/actividades'
 import ActividadModal from '../components/ActividadModal'
@@ -25,7 +27,7 @@ export default function ActividadesPage() {
 
   async function handleSave(datos) {
     if (editando) {
-      await actualizarActividad(editando.id, datos)
+      await actualizarActividad(editando.id, datos, editando.historialPrecios)
     } else {
       await crearActividad({ ...datos, espacioId: espacioActualId })
     }
@@ -66,7 +68,8 @@ export default function ActividadesPage() {
         </div>
       ) : (
         actividades.map((act) => {
-          const diasConPrecio = DIAS_PRECIO.filter((d) => act.precios?.[d] != null)
+          const precios = precioVigente(act, mesActualId())
+          const diasConPrecio = DIAS_PRECIO.filter((d) => precios?.[d] != null)
           return (
             <div className="card" key={act.id}>
               <div className="page-title" style={{ marginBottom: 10 }}>
@@ -96,7 +99,7 @@ export default function ActividadesPage() {
                         {dia} {dia === 1 ? 'día' : 'días'}/semana
                       </div>
                       <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>
-                        {fmtMoney(act.precios[dia])}
+                        {fmtMoney(precios[dia])}
                       </div>
                     </div>
                   ))}

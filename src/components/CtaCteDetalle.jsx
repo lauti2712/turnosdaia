@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import {
   subscribeMovimientos,
   eliminarMovimiento,
+  actualizarMovimientoPago,
+  actualizarMovimientoAjuste,
   calcularSaldo,
+  deudaGenerada,
   mesesTranscurridos,
   montoViviDePago,
   montoPropioDePago,
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
 import MovimientoForm from './MovimientoForm'
+import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
@@ -18,14 +22,23 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [movimientos, setMovimientos] = useState([])
+  const [editando, setEditando] = useState(null)
+
+  async function handleGuardarEdicion(datos) {
+    if (editando.tipo === 'pago') {
+      await actualizarMovimientoPago(editando.id, datos)
+    } else {
+      await actualizarMovimientoAjuste(editando.id, datos)
+    }
+  }
 
   useEffect(() => subscribeMovimientos(alumno.id, setMovimientos), [alumno.id])
 
   const montoMensual = montoMensualEfectivo(alumno, actividades)
   const alumnoConPrecio = { ...alumno, montoMensual }
-  const saldo = calcularSaldo(alumnoConPrecio, movimientos)
+  const saldo = calcularSaldo(alumno, movimientos, actividades)
   const meses = mesesTranscurridos(alumno.fechaInicio)
-  const deudaTotal = meses * montoMensual
+  const deudaTotal = deudaGenerada(alumno, actividades)
   const pagado = movimientos.filter((m) => m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
 
   return (
@@ -92,15 +105,30 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
                   )}
                 </td>
                 <td>
-                  <button className="icon-btn" onClick={() => eliminarMovimiento(m.id)}>
-                    ✕
-                  </button>
+                  <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                    <button className="btn btn-sm" onClick={() => setEditando(m)}>
+                      Editar
+                    </button>
+                    <button className="icon-btn" onClick={() => eliminarMovimiento(m.id)}>
+                      ✕
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         </div>
+      )}
+
+      {editando && (
+        <MovimientoEditModal
+          movimiento={editando}
+          tipo={editando.tipo}
+          socioNombre={socioNombre}
+          onSave={handleGuardarEdicion}
+          onClose={() => setEditando(null)}
+        />
       )}
     </div>
   )

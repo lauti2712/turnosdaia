@@ -4,6 +4,7 @@ import AlumnosPage from './pages/AlumnosPage'
 import CobrosPage from './pages/CobrosPage'
 import ActividadesPage from './pages/ActividadesPage'
 import EspaciosPage from './pages/EspaciosPage'
+import PapeleraPage from './pages/PapeleraPage'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { EspacioProvider, useEspacio } from './context/EspacioContext'
 
@@ -55,6 +56,9 @@ function AppShell() {
           <NavLink to="/espacios" className={({ isActive }) => (isActive ? 'active' : '')}>
             Espacios
           </NavLink>
+          <NavLink to="/papelera" className={({ isActive }) => (isActive ? 'active' : '')}>
+            Papelera
+          </NavLink>
         </nav>
       </header>
       <Routes>
@@ -64,6 +68,7 @@ function AppShell() {
         <Route path="/cobros" element={<CobrosPage />} />
         <Route path="/actividades" element={<ActividadesPage />} />
         <Route path="/espacios" element={<EspaciosPage />} />
+        <Route path="/papelera" element={<PapeleraPage />} />
       </Routes>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DIAS_PRECIO } from '../data/actividades'
+import { DIAS_PRECIO, precioVigente, mesActualId } from '../data/actividades'
 import { useEspacio } from '../context/EspacioContext'
 
 const ACTIVIDAD_VACIA = { nombre: '', porcentajeVivi: 50, precios: {} }
@@ -9,7 +9,7 @@ export default function ActividadModal({ actividad, onSave, onClose }) {
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [form, setForm] = useState(
     actividad
-      ? { ...ACTIVIDAD_VACIA, ...actividad, precios: { ...actividad.precios } }
+      ? { ...ACTIVIDAD_VACIA, ...actividad, precios: { ...precioVigente(actividad, mesActualId()) } }
       : ACTIVIDAD_VACIA,
   )
   const [guardando, setGuardando] = useState(false)
@@ -65,6 +65,12 @@ export default function ActividadModal({ actividad, onSave, onClose }) {
 
             <div className="field">
               <label>Precio mensual según días por semana (dejar vacío el que no aplique)</label>
+              {actividad && (
+                <div className="muted" style={{ fontSize: '0.78rem', marginBottom: 6 }}>
+                  Si cambiás un precio, rige desde este mes en adelante — los meses ya devengados
+                  quedan calculados con el precio anterior.
+                </div>
+              )}
               <div className="form-row">
                 {DIAS_PRECIO.map((dia) => (
                   <div className="field" key={dia}>

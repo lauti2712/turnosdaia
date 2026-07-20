@@ -1,13 +1,6 @@
-import {
-  collection,
-  doc,
-  addDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-} from 'firebase/firestore'
+import { collection, doc, addDoc, updateDoc, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
+import { marcarEliminado } from './papelera'
 
 const pagosViviRef = collection(db, 'pagosVivi')
 
@@ -16,7 +9,9 @@ const pagosViviRef = collection(db, 'pagosVivi')
 export function subscribePagosVivi(callback) {
   const q = query(pagosViviRef, orderBy('fecha', 'desc'))
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    callback(
+      snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => !p.eliminadoTs),
+    )
   })
 }
 
@@ -30,6 +25,14 @@ export function registrarPagoVivi({ espacioId, monto, fecha, descripcion }) {
   })
 }
 
+export function actualizarPagoVivi(id, { monto, fecha, descripcion }) {
+  return updateDoc(doc(db, 'pagosVivi', id), {
+    monto: Number(monto) || 0,
+    fecha,
+    descripcion: descripcion || '',
+  })
+}
+
 export function eliminarPagoVivi(id) {
-  return deleteDoc(doc(db, 'pagosVivi', id))
+  return marcarEliminado('pagosVivi', id)
 }

@@ -1,21 +1,15 @@
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-} from 'firebase/firestore'
+import { collection, doc, addDoc, updateDoc, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
+import { marcarEliminado } from './papelera'
 
 const espaciosRef = collection(db, 'espacios')
 
 export function subscribeEspacios(callback) {
   const q = query(espaciosRef, orderBy('nombre'))
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    callback(
+      snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((e) => !e.eliminadoTs),
+    )
   })
 }
 
@@ -35,5 +29,5 @@ export function actualizarEspacio(id, { nombre, socioNombre }) {
 }
 
 export function eliminarEspacio(id) {
-  return deleteDoc(doc(db, 'espacios', id))
+  return marcarEliminado('espacios', id)
 }

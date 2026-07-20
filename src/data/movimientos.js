@@ -1,14 +1,7 @@
-import {
-  collection,
-  doc,
-  addDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore'
+import { collection, doc, addDoc, updateDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
+import { montoMensualEfectivo } from './actividades'
+import { marcarEliminado } from './papelera'
 
 const movimientosRef = collection(db, 'movimientos')
 
@@ -19,14 +12,18 @@ export function subscribeMovimientos(alumnoId, callback) {
     orderBy('fecha', 'desc'),
   )
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    callback(
+      snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((m) => !m.eliminadoTs),
+    )
   })
 }
 
 export function subscribeTodosMovimientos(callback) {
   const q = query(movimientosRef, orderBy('fecha', 'desc'))
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    callback(
+      snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((m) => !m.eliminadoTs),
+    )
   })
 }
 
@@ -84,7 +81,27 @@ export function registrarAjuste({ espacioId, alumnoId, monto, fecha, descripcion
 }
 
 export function eliminarMovimiento(id) {
-  return deleteDoc(doc(db, 'movimientos', id))
+  return marcarEliminado('movimientos', id)
+}
+
+// Edita un movimiento ya cargado (corregir un error de tipeo, por ejemplo).
+// No cambia el tipo ni el alumno — solo los datos del pago/ajuste en sí.
+export function actualizarMovimientoPago(id, { monto, fecha, formaPago, descripcion, abonadoAVivi }) {
+  return updateDoc(doc(db, 'movimientos', id), {
+    monto: Number(monto) || 0,
+    fecha,
+    formaPago: formaPago || '',
+    descripcion: descripcion || '',
+    abonadoAVivi: !!abonadoAVivi,
+  })
+}
+
+export function actualizarMovimientoAjuste(id, { monto, fecha, descripcion }) {
+  return updateDoc(doc(db, 'movimientos', id), {
+    monto: Number(monto) || 0,
+    fecha,
+    descripcion: descripcion || '',
+  })
 }
 
 // Meses de cuota devengados desde fechaInicio hasta hoy (el mes de inicio ya cuenta como 1).
@@ -98,9 +115,26 @@ export function mesesTranscurridos(fechaInicio, hasta = new Date()) {
   return Math.max(meses, 0)
 }
 
+// Deuda generada mes a mes desde fechaInicio hasta hoy, usando en cada mes
+// la tarifa que estaba vigente en ESE momento (no la actual) — así, si el
+// precio de una actividad cambió en el medio, los meses ya devengados no se
+// recalculan con la tarifa nueva.
+export function deudaGenerada(alumno, actividades) {
+  const meses = mesesTranscurridos(alumno.fechaInicio)
+  if (meses === 0 || !alumno.fechaInicio) return 0
+  const cursor = new Date(alumno.fechaInicio + 'T00:00:00')
+  let total = 0
+  for (let i = 0; i < meses; i++) {
+    const mesId = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+    total += montoMensualEfectivo(alumno, actividades, mesId)
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+  return total
+}
+
 // saldo > 0 significa que el alumno debe plata.
-export function calcularSaldo(alumno, movimientos) {
-  const deuda = mesesTranscurridos(alumno.fechaInicio) * (alumno.montoMensual || 0)
+export function calcularSaldo(alumno, movimientos, actividades) {
+  const deuda = deudaGenerada(alumno, actividades)
   const pagos = movimientos
     .filter((m) => m.tipo === 'pago')
     .reduce((acc, m) => acc + m.monto, 0)

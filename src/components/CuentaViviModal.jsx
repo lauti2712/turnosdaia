@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
 import { subscribeActividades } from '../data/actividades'
 import { subscribeTodosMovimientos, montoViviDePago, montoPropioDePago } from '../data/movimientos'
-import { subscribePagosVivi, eliminarPagoVivi } from '../data/pagosVivi'
+import { subscribePagosVivi, eliminarPagoVivi, actualizarPagoVivi } from '../data/pagosVivi'
+import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
@@ -37,6 +38,7 @@ export default function CuentaViviModal({ onClose }) {
   const [movimientosTodos, setMovimientosTodos] = useState([])
   const [pagosViviTodos, setPagosViviTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
+  const [editando, setEditando] = useState(null)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeActividades(setActividades), [])
@@ -87,6 +89,7 @@ export default function CuentaViviModal({ onClose }) {
       deVivi: p.monto,
       propio: 0,
       eliminable: true,
+      original: p,
       onEliminar: () => eliminarPagoVivi(p.id),
     })),
   ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
@@ -95,6 +98,10 @@ export default function CuentaViviModal({ onClose }) {
     if (confirm(`¿Eliminar este pago a ${socioNombre} de ${fmtMoney(fila.monto)}?`)) {
       await fila.onEliminar()
     }
+  }
+
+  async function handleGuardarEdicion(datos) {
+    await actualizarPagoVivi(editando.original.id, datos)
   }
 
   return (
@@ -179,9 +186,14 @@ export default function CuentaViviModal({ onClose }) {
                     <td>{fmtMoney(f.propio)}</td>
                     <td>
                       {f.eliminable && (
-                        <button className="icon-btn" aria-label="Eliminar" onClick={() => handleEliminar(f)}>
-                          ✕
-                        </button>
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                          <button className="btn btn-sm" onClick={() => setEditando(f)}>
+                            Editar
+                          </button>
+                          <button className="icon-btn" aria-label="Eliminar" onClick={() => handleEliminar(f)}>
+                            ✕
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -191,6 +203,16 @@ export default function CuentaViviModal({ onClose }) {
           </div>
         )}
       </div>
+
+      {editando && (
+        <MovimientoEditModal
+          movimiento={editando.original}
+          tipo="pagoSocio"
+          socioNombre={socioNombre}
+          onSave={handleGuardarEdicion}
+          onClose={() => setEditando(null)}
+        />
+      )}
     </div>
   )
 }

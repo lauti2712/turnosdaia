@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
-import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
+import { subscribeActividades } from '../data/actividades'
 import {
   subscribeTodosMovimientos,
   calcularSaldo,
@@ -45,8 +45,7 @@ export default function CobrosPage() {
 
   const filasCompletas = activos.map((a) => {
     const movsAlumno = movimientos.filter((m) => m.alumnoId === a.id)
-    const montoMensual = montoMensualEfectivo(a, actividades)
-    return { alumno: a, saldo: calcularSaldo({ ...a, montoMensual }, movsAlumno) }
+    return { alumno: a, saldo: calcularSaldo(a, movsAlumno, actividades) }
   })
 
   const filas = filasCompletas

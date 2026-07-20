@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
-import { subscribeTodosMovimientos, eliminarMovimiento } from '../data/movimientos'
+import {
+  subscribeTodosMovimientos,
+  eliminarMovimiento,
+  actualizarMovimientoPago,
+  actualizarMovimientoAjuste,
+} from '../data/movimientos'
+import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
@@ -33,9 +39,18 @@ export default function HistorialCobrosModal({ onClose }) {
   const [alumnos, setAlumnos] = useState([])
   const [movimientosTodos, setMovimientosTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
+  const [editando, setEditando] = useState(null)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
+
+  async function handleGuardarEdicion(datos) {
+    if (editando.tipo === 'pago') {
+      await actualizarMovimientoPago(editando.id, datos)
+    } else {
+      await actualizarMovimientoAjuste(editando.id, datos)
+    }
+  }
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
   const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
@@ -128,9 +143,14 @@ export default function HistorialCobrosModal({ onClose }) {
                       <td>{fmtMoney(m.monto)}</td>
                       <td className="muted">{[m.formaPago, m.descripcion].filter(Boolean).join(' · ')}</td>
                       <td>
-                        <button className="icon-btn" aria-label="Eliminar" onClick={() => handleEliminar(m)}>
-                          ✕
-                        </button>
+                        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                          <button className="btn btn-sm" onClick={() => setEditando(m)}>
+                            Editar
+                          </button>
+                          <button className="icon-btn" aria-label="Eliminar" onClick={() => handleEliminar(m)}>
+                            ✕
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -140,6 +160,16 @@ export default function HistorialCobrosModal({ onClose }) {
           </div>
         )}
       </div>
+
+      {editando && (
+        <MovimientoEditModal
+          movimiento={editando}
+          tipo={editando.tipo}
+          socioNombre={socioNombre}
+          onSave={handleGuardarEdicion}
+          onClose={() => setEditando(null)}
+        />
+      )}
     </div>
   )
 }

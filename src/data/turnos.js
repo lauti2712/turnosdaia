@@ -3,7 +3,6 @@ import {
   doc,
   addDoc,
   updateDoc,
-  deleteDoc,
   onSnapshot,
   query,
   orderBy,
@@ -11,6 +10,7 @@ import {
   arrayRemove,
 } from 'firebase/firestore'
 import { db } from '../firebase'
+import { marcarEliminado } from './papelera'
 
 const turnosRef = collection(db, 'turnos')
 
@@ -44,7 +44,11 @@ export function construirNombreTurno({ actividad, diasActivos, horario }) {
 export function subscribeTurnos(callback) {
   const q = query(turnosRef, orderBy('orden'))
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, dias: diasVacios(), diasActivos: [], ...d.data() })))
+    callback(
+      snap.docs
+        .map((d) => ({ id: d.id, dias: diasVacios(), diasActivos: [], ...d.data() }))
+        .filter((t) => !t.eliminadoTs),
+    )
   })
 }
 
@@ -77,7 +81,7 @@ export function actualizarTurno(id, { actividad, diasActivos, horario, cupoMaxim
 }
 
 export function eliminarTurno(id) {
-  return deleteDoc(doc(db, 'turnos', id))
+  return marcarEliminado('turnos', id)
 }
 
 export function asignarAlumno(turnoId, dia, alumnoId) {

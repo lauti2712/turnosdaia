@@ -1,21 +1,15 @@
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-} from 'firebase/firestore'
+import { collection, doc, addDoc, updateDoc, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
+import { marcarEliminado } from './papelera'
 
 const alumnosRef = collection(db, 'alumnos')
 
 export function subscribeAlumnos(callback) {
   const q = query(alumnosRef, orderBy('apellido'))
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    callback(
+      snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((a) => !a.eliminadoTs),
+    )
   })
 }
 
@@ -57,7 +51,7 @@ export function archivarAlumno(id, activo) {
 }
 
 export function eliminarAlumno(id) {
-  return deleteDoc(doc(db, 'alumnos', id))
+  return marcarEliminado('alumnos', id)
 }
 
 function normalizar(texto) {
