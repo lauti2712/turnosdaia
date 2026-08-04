@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { montoMensualEfectivo } from '../data/actividades'
+import { DIAS_LABEL, turnosActualesDeAlumno } from '../data/turnos'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -7,14 +8,20 @@ const fmtMoney = (n) =>
 const ALUMNO_VACIO = {
   nombre: '',
   apellido: '',
-  diasPorSemana: 2,
   actividadId: '',
   precioManual: '',
   fechaInicio: new Date().toISOString().slice(0, 10),
   extra: [],
 }
 
-export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
+const BLOQUE_VACIO = { turnoId: '', dias: [] }
+
+function librasEnDia(turno, dia, alumnoId) {
+  const ocupados = (turno.dias?.[dia] || []).filter((id) => id !== alumnoId).length
+  return Math.max((turno.cupoMaximo || 0) - ocupados, 0)
+}
+
+export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, onClose }) {
   const [form, setForm] = useState(
     alumno
       ? {
@@ -26,11 +33,69 @@ export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
         }
       : ALUMNO_VACIO,
   )
+  // Si el alumno ya tiene el campo `turnos` (se editó alguna vez desde esta
+  // ficha), se usa tal cual. Si no, se reconstruye desde turno.dias real —
+  // cubre alumnos viejos asignados a mano desde la grilla de Turnos, para no
+  // perder ni duplicar su asignación real al guardar por primera vez acá.
+  const turnosIniciales = alumno?.turnos?.length
+    ? alumno.turnos.map((t) => ({ ...t, dias: [...t.dias] }))
+    : alumno
+      ? turnosActualesDeAlumno(alumno.id, turnos)
+      : []
+  const [turnosSel, setTurnosSel] = useState(
+    turnosIniciales.length ? turnosIniciales : [{ ...BLOQUE_VACIO }],
+  )
+  const [multiTurno, setMultiTurno] = useState(alumno?.multiTurno ?? turnosIniciales.length > 1)
   const [usarPrecioManual, setUsarPrecioManual] = useState(alumno?.precioManual != null)
   const [guardando, setGuardando] = useState(false)
 
   function setCampo(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }))
+  }
+
+  function cambiarActividad(actividadId) {
+    setForm((f) => ({ ...f, actividadId }))
+    setTurnosSel([{ ...BLOQUE_VACIO }])
+    setMultiTurno(false)
+  }
+
+  const turnosDeActividad = turnos.filter((t) => t.actividadId === form.actividadId)
+
+  function turnosDisponiblesPara(indice) {
+    const elegidosEnOtrosBloques = new Set(
+      turnosSel.filter((_, i) => i !== indice).map((t) => t.turnoId),
+    )
+    return turnosDeActividad.filter((t) => !elegidosEnOtrosBloques.has(t.id))
+  }
+
+  function elegirTurno(indice, turnoId) {
+    const turno = turnos.find((t) => t.id === turnoId)
+    setTurnosSel((bloques) =>
+      bloques.map((b, i) => (i === indice ? { turnoId, dias: turno ? [...turno.diasActivos] : [] } : b)),
+    )
+  }
+
+  function toggleDia(indice, dia) {
+    setTurnosSel((bloques) =>
+      bloques.map((b, i) =>
+        i === indice
+          ? { ...b, dias: b.dias.includes(dia) ? b.dias.filter((d) => d !== dia) : [...b.dias, dia] }
+          : b,
+      ),
+    )
+  }
+
+  function agregarBloque() {
+    setTurnosSel((bloques) => [...bloques, { ...BLOQUE_VACIO }])
+  }
+
+  function quitarBloque(indice) {
+    setTurnosSel((bloques) => bloques.filter((_, i) => i !== indice))
+  }
+
+  function toggleMultiTurno(activar) {
+    setMultiTurno(activar)
+    if (!activar) setTurnosSel((bloques) => bloques.slice(0, 1))
   }
 
   function setExtra(i, key, value) {
@@ -49,8 +114,10 @@ export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
     setForm((f) => ({ ...f, extra: f.extra.filter((_, idx) => idx !== i) }))
   }
 
+  const totalDias = turnosSel.reduce((acc, t) => acc + t.dias.length, 0)
+
   const precioCalculado = montoMensualEfectivo(
-    { actividadId: form.actividadId, diasPorSemana: form.diasPorSemana, precioManual: null },
+    { actividadId: form.actividadId, diasPorSemana: totalDias, precioManual: null },
     actividades,
   )
 
@@ -60,6 +127,9 @@ export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
     try {
       await onSave({
         ...form,
+        diasPorSemana: totalDias,
+        turnos: turnosSel.filter((t) => t.turnoId && t.dias.length > 0),
+        multiTurno,
         precioManual: usarPrecioManual ? form.precioManual : '',
         extra: form.extra.filter((x) => x.clave.trim()),
       })
@@ -92,32 +162,117 @@ export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
                 />
               </div>
             </div>
-            <div className="form-row">
-              <div className="field">
-                <label>Actividad</label>
-                <select
-                  value={form.actividadId}
-                  onChange={(e) => setCampo('actividadId', e.target.value)}
-                >
-                  <option value="">Sin asignar</option>
-                  {actividades.map((act) => (
-                    <option key={act.id} value={act.id}>
-                      {act.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Días por semana</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="7"
-                  value={form.diasPorSemana}
-                  onChange={(e) => setCampo('diasPorSemana', e.target.value)}
-                />
-              </div>
+
+            <div className="field">
+              <label>Actividad</label>
+              <select value={form.actividadId} onChange={(e) => cambiarActividad(e.target.value)}>
+                <option value="">Sin asignar</option>
+                {actividades.map((act) => (
+                  <option key={act.id} value={act.id}>
+                    {act.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {form.actividadId && (
+              <div className="field">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ marginBottom: 0 }}>Turno</label>
+                  <label
+                    className="muted"
+                    style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.78rem' }}
+                  >
+                    <input
+                      type="checkbox"
+                      style={{ width: 'auto' }}
+                      checked={multiTurno}
+                      onChange={(e) => toggleMultiTurno(e.target.checked)}
+                    />
+                    Va a más de un turno
+                  </label>
+                </div>
+
+                {turnosDeActividad.length === 0 ? (
+                  <div className="muted" style={{ fontSize: '0.82rem' }}>
+                    No hay turnos creados todavía para esta actividad.
+                  </div>
+                ) : (
+                  turnosSel.map((bloque, i) => {
+                    const turno = turnos.find((t) => t.id === bloque.turnoId)
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          border: '1px solid var(--border)',
+                          borderRadius: 8,
+                          padding: 10,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <select
+                            value={bloque.turnoId}
+                            onChange={(e) => elegirTurno(i, e.target.value)}
+                            style={{ flex: 1 }}
+                          >
+                            <option value="">Elegir turno...</option>
+                            {turnosDisponiblesPara(i).map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.nombre}
+                              </option>
+                            ))}
+                          </select>
+                          {multiTurno && turnosSel.length > 1 && (
+                            <button
+                              type="button"
+                              className="icon-btn"
+                              aria-label="Quitar turno"
+                              onClick={() => quitarBloque(i)}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {turno && (
+                          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+                            {turno.diasActivos.map((dia) => (
+                              <label
+                                key={dia}
+                                style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.82rem' }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  style={{ width: 'auto' }}
+                                  checked={bloque.dias.includes(dia)}
+                                  onChange={() => toggleDia(i, dia)}
+                                />
+                                {DIAS_LABEL[dia]}
+                                <span className="muted">
+                                  {' '}
+                                  ({librasEnDia(turno, dia, alumno?.id)} libres)
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+
+                {multiTurno && turnosDeActividad.length > turnosSel.length && (
+                  <button type="button" className="btn btn-sm" onClick={agregarBloque}>
+                    + Agregar otro turno
+                  </button>
+                )}
+
+                <div className="muted" style={{ fontSize: '0.8rem', marginTop: 6 }}>
+                  Total: {totalDias} {totalDias === 1 ? 'día' : 'días'}/semana
+                </div>
+              </div>
+            )}
 
             <div className="field">
               <label>Precio mensual</label>
@@ -133,8 +288,7 @@ export default function AlumnoModal({ alumno, actividades, onSave, onClose }) {
                     {fmtMoney(precioCalculado)}
                   </div>
                   <div className="muted" style={{ fontSize: '0.75rem' }}>
-                    Según la tabla de precios de la actividad. Cambia sola si se actualiza la
-                    tarifa.
+                    Según la tabla de precios de la actividad y los días elegidos arriba.
                   </div>
                 </div>
               ) : (

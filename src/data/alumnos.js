@@ -8,7 +8,15 @@ export function subscribeAlumnos(callback) {
   const q = query(alumnosRef, orderBy('apellido'))
   return onSnapshot(q, (snap) => {
     callback(
-      snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((a) => !a.eliminadoTs),
+      snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((a) => !a.eliminadoTs)
+        // orderBy('apellido') de Firestore no ordena por nombre dentro de un
+        // mismo apellido, ni maneja bien tildes/mayúsculas — se reordena acá
+        // con localeCompare para un alfabético real.
+        .sort((a, b) =>
+          `${a.apellido}, ${a.nombre}`.localeCompare(`${b.apellido}, ${b.nombre}`, 'es'),
+        ),
     )
   })
 }
@@ -21,6 +29,8 @@ function normalizarAlumno({
   precioManual,
   fechaInicio,
   extra,
+  turnos,
+  multiTurno,
 }) {
   return {
     nombre,
@@ -30,6 +40,8 @@ function normalizarAlumno({
     precioManual: precioManual === '' || precioManual == null ? null : Number(precioManual),
     fechaInicio,
     extra: extra || [],
+    turnos: turnos || [],
+    multiTurno: !!multiTurno,
   }
 }
 

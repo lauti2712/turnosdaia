@@ -34,11 +34,11 @@ function diasVacios() {
   return Object.fromEntries(DIAS.map((d) => [d, []]))
 }
 
-export function construirNombreTurno({ actividad, diasActivos, horario }) {
+export function construirNombreTurno({ actividadNombre, diasActivos, horario }) {
   const iniciales = DIAS.filter((d) => (diasActivos || []).includes(d))
     .map((d) => DIAS_INICIAL[d])
     .join(', ')
-  return [actividad, iniciales, horario].filter(Boolean).join(' ')
+  return [actividadNombre, iniciales, horario].filter(Boolean).join(' ')
 }
 
 export function subscribeTurnos(callback) {
@@ -52,14 +52,14 @@ export function subscribeTurnos(callback) {
   })
 }
 
-export function crearTurno({ espacioId, actividad, diasActivos, horario, cupoMaximo }) {
+export function crearTurno({ espacioId, actividadId, actividadNombre, diasActivos, horario, cupoMaximo }) {
   return addDoc(turnosRef, {
     espacioId,
-    actividad: actividad || '',
+    actividadId: actividadId || null,
     diasActivos: diasActivos || [],
     horario: horario || '',
     cupoMaximo: Number(cupoMaximo) || 1,
-    nombre: construirNombreTurno({ actividad, diasActivos, horario }),
+    nombre: construirNombreTurno({ actividadNombre, diasActivos, horario }),
     dias: diasVacios(),
     orden: Date.now(),
     creadoTs: Date.now(),
@@ -70,13 +70,13 @@ export function actualizarOrdenTurno(id, orden) {
   return updateDoc(doc(db, 'turnos', id), { orden })
 }
 
-export function actualizarTurno(id, { actividad, diasActivos, horario, cupoMaximo }) {
+export function actualizarTurno(id, { actividadId, actividadNombre, diasActivos, horario, cupoMaximo }) {
   return updateDoc(doc(db, 'turnos', id), {
-    actividad: actividad || '',
+    actividadId: actividadId || null,
     diasActivos: diasActivos || [],
     horario: horario || '',
     cupoMaximo: Number(cupoMaximo) || 1,
-    nombre: construirNombreTurno({ actividad, diasActivos, horario }),
+    nombre: construirNombreTurno({ actividadNombre, diasActivos, horario }),
   })
 }
 
@@ -94,4 +94,45 @@ export function quitarAlumno(turnoId, dia, alumnoId) {
   return updateDoc(doc(db, 'turnos', turnoId), {
     [`dias.${dia}`]: arrayRemove(alumnoId),
   })
+}
+
+// Con qué turnos/días está realmente un alumno AHORA MISMO en Firestore,
+// mirando turno.dias directamente en vez de confiar en el campo alumno.turnos
+// (que puede no existir todavía si nunca se editó desde la ficha nueva, o
+// quedar desactualizado si se lo asignó a mano desde la grilla de Turnos).
+// Es la base real contra la que se compara al sincronizar.
+export function turnosActualesDeAlumno(alumnoId, turnos) {
+  const resultado = []
+  for (const turno of turnos) {
+    const dias = DIAS.filter((dia) => (turno.dias?.[dia] || []).includes(alumnoId))
+    if (dias.length > 0) resultado.push({ turnoId: turno.id, dias })
+  }
+  return resultado
+}
+
+// Reconcilia las asignaciones turno+día de un alumno cuando se crea/edita
+// desde su ficha: da de baja las combinaciones que ya no están y da de alta
+// las nuevas, comparando contra el estado anterior (vacío si es un alumno
+// nuevo). turnosAnteriores/turnosNuevos: [{ turnoId, dias: [...] }].
+export function sincronizarAsignaciones(alumnoId, turnosAnteriores = [], turnosNuevos = []) {
+  const clave = (turnoId, dia) => `${turnoId}:${dia}`
+  const antes = new Set(
+    turnosAnteriores.flatMap((t) => (t.dias || []).map((d) => clave(t.turnoId, d))),
+  )
+  const despues = new Set(
+    turnosNuevos.flatMap((t) => (t.dias || []).map((d) => clave(t.turnoId, d))),
+  )
+  const aQuitar = [...antes].filter((x) => !despues.has(x))
+  const aAgregar = [...despues].filter((x) => !antes.has(x))
+
+  return Promise.all([
+    ...aQuitar.map((x) => {
+      const [turnoId, dia] = x.split(':')
+      return quitarAlumno(turnoId, dia, alumnoId)
+    }),
+    ...aAgregar.map((x) => {
+      const [turnoId, dia] = x.split(':')
+      return asignarAlumno(turnoId, dia, alumnoId)
+    }),
+  ])
 }

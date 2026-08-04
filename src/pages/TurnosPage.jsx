@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { DIAS, subscribeTurnos, crearTurno, actualizarTurno } from '../data/turnos'
+import { DIAS, subscribeTurnos, crearTurno, actualizarTurno, sincronizarAsignaciones } from '../data/turnos'
 import { subscribeAlumnos, crearAlumno } from '../data/alumnos'
 import { subscribeActividades } from '../data/actividades'
 import TurnoCard from '../components/TurnoCard'
@@ -49,6 +49,11 @@ export default function TurnosPage() {
     } else {
       await crearTurno({ ...datos, espacioId: espacioActualId })
     }
+  }
+
+  async function handleGuardarAlumnoNuevo(datos) {
+    const ref = await crearAlumno({ ...datos, espacioId: espacioActualId })
+    await sincronizarAsignaciones(ref.id, [], datos.turnos)
   }
 
   function abrirNuevo() {
@@ -136,13 +141,19 @@ export default function TurnosPage() {
       )}
 
       {modalAbierto && (
-        <TurnoModal turno={editando} onSave={handleSave} onClose={() => setModalAbierto(false)} />
+        <TurnoModal
+          turno={editando}
+          actividades={actividades}
+          onSave={handleSave}
+          onClose={() => setModalAbierto(false)}
+        />
       )}
 
       {modalAlumnoAbierto && (
         <AlumnoModal
           actividades={actividades}
-          onSave={(datos) => crearAlumno({ ...datos, espacioId: espacioActualId })}
+          turnos={turnos}
+          onSave={handleGuardarAlumnoNuevo}
           onClose={() => setModalAlumnoAbierto(false)}
         />
       )}

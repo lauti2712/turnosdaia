@@ -8,6 +8,7 @@ import {
   coincideBusqueda,
 } from '../data/alumnos'
 import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
+import { subscribeTurnos, sincronizarAsignaciones, turnosActualesDeAlumno } from '../data/turnos'
 import AlumnoModal from '../components/AlumnoModal'
 import { useEspacio } from '../context/EspacioContext'
 
@@ -18,6 +19,7 @@ export default function AlumnosPage() {
   const { espacioActualId } = useEspacio()
   const [alumnosTodos, setAlumnosTodos] = useState([])
   const [actividadesTodas, setActividadesTodas] = useState([])
+  const [turnosTodos, setTurnosTodos] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [mostrarInactivos, setMostrarInactivos] = useState(false)
@@ -25,16 +27,21 @@ export default function AlumnosPage() {
 
   useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
   useEffect(() => subscribeActividades(setActividadesTodas), [])
+  useEffect(() => subscribeTurnos(setTurnosTodos), [])
 
   const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
   const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
+  const turnos = turnosTodos.filter((t) => t.espacioId === espacioActualId)
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
 
   async function handleSave(datos) {
     if (editando) {
+      const turnosAntes = turnosActualesDeAlumno(editando.id, turnos)
       await actualizarAlumno(editando.id, datos)
+      await sincronizarAsignaciones(editando.id, turnosAntes, datos.turnos)
     } else {
-      await crearAlumno({ ...datos, espacioId: espacioActualId })
+      const ref = await crearAlumno({ ...datos, espacioId: espacioActualId })
+      await sincronizarAsignaciones(ref.id, [], datos.turnos)
     }
   }
 
@@ -159,6 +166,7 @@ export default function AlumnosPage() {
         <AlumnoModal
           alumno={editando}
           actividades={actividades}
+          turnos={turnos}
           onSave={handleSave}
           onClose={() => setModalAbierto(false)}
         />

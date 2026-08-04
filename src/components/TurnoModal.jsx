@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { DIAS, DIAS_LABEL, construirNombreTurno } from '../data/turnos'
 
-const TURNO_VACIO = { actividad: '', horario: '', cupoMaximo: 6, diasActivos: [] }
+const TURNO_VACIO = { actividadId: '', horario: '', cupoMaximo: 6, diasActivos: [] }
 
-export default function TurnoModal({ turno, onSave, onClose }) {
+export default function TurnoModal({ turno, actividades = [], onSave, onClose }) {
   const [form, setForm] = useState(
     turno
       ? { ...TURNO_VACIO, ...turno, diasActivos: turno.diasActivos ? [...turno.diasActivos] : [] }
@@ -24,18 +24,20 @@ export default function TurnoModal({ turno, onSave, onClose }) {
     }))
   }
 
+  const actividadNombre = actividades.find((a) => a.id === form.actividadId)?.nombre || ''
+
   async function handleSubmit(e) {
     e.preventDefault()
     setGuardando(true)
     try {
-      await onSave(form)
+      await onSave({ ...form, actividadNombre })
       onClose()
     } finally {
       setGuardando(false)
     }
   }
 
-  const previewNombre = construirNombreTurno(form)
+  const previewNombre = construirNombreTurno({ ...form, actividadNombre })
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -45,12 +47,19 @@ export default function TurnoModal({ turno, onSave, onClose }) {
           <div className="grid" style={{ gap: 10 }}>
             <div className="field">
               <label>Actividad</label>
-              <input
-                value={form.actividad}
-                onChange={(e) => setCampo('actividad', e.target.value)}
-                placeholder="Pilates, Yoga..."
+              <select
+                value={form.actividadId}
+                onChange={(e) => setCampo('actividadId', e.target.value)}
                 autoFocus
-              />
+                required
+              >
+                <option value="">Elegir actividad...</option>
+                {actividades.map((act) => (
+                  <option key={act.id} value={act.id}>
+                    {act.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="field">
