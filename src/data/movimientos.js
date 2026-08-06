@@ -118,15 +118,19 @@ export function mesesTranscurridos(fechaInicio, hasta = new Date()) {
 // Deuda generada mes a mes desde fechaInicio hasta hoy, usando en cada mes
 // la tarifa que estaba vigente en ESE momento (no la actual) — así, si el
 // precio de una actividad cambió en el medio, los meses ya devengados no se
-// recalculan con la tarifa nueva.
+// recalculan con la tarifa nueva. Los meses bonificados (alumno.bonificaciones)
+// no suman nada — no generan deuda ni corresponde ningún pago por ellos.
 export function deudaGenerada(alumno, actividades) {
   const meses = mesesTranscurridos(alumno.fechaInicio)
   if (meses === 0 || !alumno.fechaInicio) return 0
+  const bonificados = new Set((alumno.bonificaciones || []).map((b) => b.mes))
   const cursor = new Date(alumno.fechaInicio + 'T00:00:00')
   let total = 0
   for (let i = 0; i < meses; i++) {
     const mesId = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
-    total += montoMensualEfectivo(alumno, actividades, mesId)
+    if (!bonificados.has(mesId)) {
+      total += montoMensualEfectivo(alumno, actividades, mesId)
+    }
     cursor.setMonth(cursor.getMonth() + 1)
   }
   return total

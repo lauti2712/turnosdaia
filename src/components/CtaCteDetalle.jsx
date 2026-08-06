@@ -11,6 +11,7 @@ import {
   montoPropioDePago,
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
+import { bonificarMes, quitarBonificacion } from '../data/alumnos'
 import MovimientoForm from './MovimientoForm'
 import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
@@ -18,11 +19,36 @@ import { useEspacio } from '../context/EspacioContext'
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
 
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+]
+
+function etiquetaMes(mesId) {
+  const [anio, mes] = mesId.split('-').map(Number)
+  return `${MESES[mes - 1]} ${anio}`
+}
+
+function mesActualId() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false }) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [movimientos, setMovimientos] = useState([])
   const [editando, setEditando] = useState(null)
+  const [mesABonificar, setMesABonificar] = useState(mesActualId())
+  const [motivoBonificacion, setMotivoBonificacion] = useState('')
+
+  const bonificaciones = alumno.bonificaciones || []
+
+  async function handleBonificar(e) {
+    e.preventDefault()
+    await bonificarMes(alumno.id, mesABonificar, motivoBonificacion, bonificaciones)
+    setMotivoBonificacion('')
+  }
 
   async function handleGuardarEdicion(datos) {
     if (editando.tipo === 'pago') {
@@ -55,7 +81,58 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
       <p className="muted" style={{ fontSize: '0.85rem', marginTop: 0 }}>
         Cliente desde {alumno.fechaInicio} · {meses} {meses === 1 ? 'mes' : 'meses'} devengados ·
         deuda generada {fmtMoney(deudaTotal)} · pagado {fmtMoney(pagado)}
+        {bonificaciones.length > 0 &&
+          ` · ${bonificaciones.length} ${bonificaciones.length === 1 ? 'mes bonificado' : 'meses bonificados'}`}
       </p>
+
+      <div style={{ marginBottom: 18 }}>
+        <form onSubmit={handleBonificar} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label style={{ fontSize: '0.78rem' }}>Bonificar un mes (no asistió)</label>
+            <input
+              type="month"
+              value={mesABonificar}
+              onChange={(e) => setMesABonificar(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+            <label className="muted" style={{ fontSize: '0.78rem' }}>
+              Motivo (opcional)
+            </label>
+            <input
+              value={motivoBonificacion}
+              onChange={(e) => setMotivoBonificacion(e.target.value)}
+              placeholder="No asistió por..."
+            />
+          </div>
+          <button type="submit" className="btn btn-sm">
+            Bonificar
+          </button>
+        </form>
+
+        {bonificaciones.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            {bonificaciones
+              .slice()
+              .sort((a, b) => b.mes.localeCompare(a.mes))
+              .map((b) => (
+                <span key={b.mes} className="badge badge-warning" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {etiquetaMes(b.mes)}
+                  {b.motivo && ` · ${b.motivo}`}
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label="Quitar bonificación"
+                    onClick={() => quitarBonificacion(alumno.id, b.mes, bonificaciones)}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+          </div>
+        )}
+      </div>
 
       <div style={{ marginBottom: 18 }}>
         <MovimientoForm alumno={alumnoConPrecio} actividades={actividades} />
