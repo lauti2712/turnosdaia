@@ -68,18 +68,6 @@ export function montoPropioDePago(movimiento) {
   return movimiento.monto * (1 - pct / 100)
 }
 
-export function registrarAjuste({ espacioId, alumnoId, monto, fecha, descripcion }) {
-  return addDoc(movimientosRef, {
-    espacioId,
-    alumnoId,
-    tipo: 'ajuste',
-    monto: Number(monto) || 0, // con signo: + aumenta deuda, - la reduce
-    fecha,
-    descripcion: descripcion || '',
-    ts: Date.now(),
-  })
-}
-
 export function eliminarMovimiento(id) {
   return marcarEliminado('movimientos', id)
 }
@@ -119,17 +107,26 @@ export function mesesTranscurridos(fechaInicio, hasta = new Date()) {
 // la tarifa que estaba vigente en ESE momento (no la actual) — así, si el
 // precio de una actividad cambió en el medio, los meses ya devengados no se
 // recalculan con la tarifa nueva. Los meses bonificados (alumno.bonificaciones)
-// no suman nada — no generan deuda ni corresponde ningún pago por ellos.
+// se cobran con el descuento indicado (% o monto fijo) en vez del precio
+// completo — las bonificaciones viejas sin "tipo" se tratan como 100% (el
+// comportamiento original: mes completamente perdonado).
 export function deudaGenerada(alumno, actividades) {
   const meses = mesesTranscurridos(alumno.fechaInicio)
   if (meses === 0 || !alumno.fechaInicio) return 0
-  const bonificados = new Set((alumno.bonificaciones || []).map((b) => b.mes))
+  const bonifPorMes = Object.fromEntries((alumno.bonificaciones || []).map((b) => [b.mes, b]))
   const cursor = new Date(alumno.fechaInicio + 'T00:00:00')
   let total = 0
   for (let i = 0; i < meses; i++) {
     const mesId = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
-    if (!bonificados.has(mesId)) {
-      total += montoMensualEfectivo(alumno, actividades, mesId)
+    const precioDelMes = montoMensualEfectivo(alumno, actividades, mesId)
+    const bonif = bonifPorMes[mesId]
+    if (bonif) {
+      const tipo = bonif.tipo || 'porcentaje'
+      const valor = bonif.valor ?? 100
+      const descuento = tipo === 'porcentaje' ? precioDelMes * (valor / 100) : valor
+      total += Math.max(precioDelMes - descuento, 0)
+    } else {
+      total += precioDelMes
     }
     cursor.setMonth(cursor.getMonth() + 1)
   }

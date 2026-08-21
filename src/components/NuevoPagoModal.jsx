@@ -105,7 +105,6 @@ export default function NuevoPagoModal({ onClose }) {
               <MovimientoForm
                 alumno={alumnoConPrecio}
                 actividades={actividades}
-                tipoInicial="pago"
                 onGuardado={onClose}
               />
             ) : (

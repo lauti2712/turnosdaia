@@ -62,12 +62,14 @@ export function archivarAlumno(id, activo) {
   return updateDoc(doc(db, 'alumnos', id), { activo })
 }
 
-// Marca un mes como bonificado (ej. no asistió): ese mes no genera deuda ni
-// corresponde ningún pago — deudaGenerada() lo salta directamente.
-export function bonificarMes(id, mes, motivo, bonificacionesActuales = []) {
-  if (bonificacionesActuales.some((b) => b.mes === mes)) return Promise.resolve()
+// Bonifica un mes (ej. no asistió, o empezó a medio mes): reduce el cargo de
+// ese mes por un % o un monto fijo, según bonificacion.tipo — deudaGenerada()
+// aplica el descuento en vez de cobrar el mes completo. Si ya había una
+// bonificación cargada para ese mes, la reemplaza (permite corregirla).
+export function bonificarMes(id, bonificacion, bonificacionesActuales = []) {
+  const otras = bonificacionesActuales.filter((b) => b.mes !== bonificacion.mes)
   return updateDoc(doc(db, 'alumnos', id), {
-    bonificaciones: [...bonificacionesActuales, { mes, motivo: motivo || '' }],
+    bonificaciones: [...otras, bonificacion],
   })
 }
 

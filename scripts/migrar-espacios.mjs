@@ -42,6 +42,11 @@ async function migrar(db, etiqueta) {
   }
 }
 
+// SOLO EMULADOR. Ya se corrió contra producción cuando se introdujo el
+// sistema de Espacios. El chequeo "ya existe" busca por nombre === 'Pilates
+// y Yoga' — si ese espacio se renombra (como pasó: ahora es 'Vivi'), el
+// chequeo no lo encuentra y crea un espacio duplicado y huérfano. Ya pasó
+// dos veces. No volver a correr esto contra prod.
 const emuladorApp = initializeApp(
   { apiKey: 'demo-api-key', projectId: 'demo-pilates-yoga' },
   'emulador',
@@ -49,19 +54,5 @@ const emuladorApp = initializeApp(
 const emuladorDb = getFirestore(emuladorApp)
 connectFirestoreEmulator(emuladorDb, '127.0.0.1', 8080)
 await migrar(emuladorDb, 'emulador')
-
-const prodApp = initializeApp(
-  {
-    apiKey: 'AIzaSyD71TmEtUL-RCTvFRW9FZJzjC0r3vNWSfo',
-    authDomain: 'turnosdaia.firebaseapp.com',
-    projectId: 'turnosdaia',
-    storageBucket: 'turnosdaia.firebasestorage.app',
-    messagingSenderId: '124153856350',
-    appId: '1:124153856350:web:28fe476fe7ebd59bc44fcf',
-  },
-  'produccion',
-)
-const prodDb = getFirestore(prodApp)
-await migrar(prodDb, 'produccion')
 
 console.log('\nListo.')

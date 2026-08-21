@@ -15,6 +15,7 @@ import { bonificarMes, quitarBonificacion } from '../data/alumnos'
 import MovimientoForm from './MovimientoForm'
 import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
+import { fmtFecha } from '../utils/fechas'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -34,20 +35,34 @@ function mesActualId() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false }) {
+const MOTIVOS_PRESET = {
+  no_asistio: 'No asistió',
+  medio_mes: 'Comienzo a medio mes',
+  libre: null, // se completa con el texto libre
+}
+
+export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false, onVerPerfil }) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [movimientos, setMovimientos] = useState([])
   const [editando, setEditando] = useState(null)
   const [mesABonificar, setMesABonificar] = useState(mesActualId())
-  const [motivoBonificacion, setMotivoBonificacion] = useState('')
+  const [tipoBonificacion, setTipoBonificacion] = useState('porcentaje')
+  const [valorBonificacion, setValorBonificacion] = useState('100')
+  const [motivoTipo, setMotivoTipo] = useState('no_asistio')
+  const [motivoLibre, setMotivoLibre] = useState('')
 
   const bonificaciones = alumno.bonificaciones || []
 
   async function handleBonificar(e) {
     e.preventDefault()
-    await bonificarMes(alumno.id, mesABonificar, motivoBonificacion, bonificaciones)
-    setMotivoBonificacion('')
+    const motivo = motivoTipo === 'libre' ? motivoLibre : MOTIVOS_PRESET[motivoTipo]
+    await bonificarMes(
+      alumno.id,
+      { mes: mesABonificar, tipo: tipoBonificacion, valor: Number(valorBonificacion) || 0, motivo },
+      bonificaciones,
+    )
+    setMotivoLibre('')
   }
 
   async function handleGuardarEdicion(datos) {
@@ -70,8 +85,13 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
   return (
     <div className={sinTarjeta ? '' : 'card'}>
       <div className="page-title" style={{ marginBottom: 10 }}>
-        <h2 style={{ margin: 0 }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
           {alumno.apellido}, {alumno.nombre}
+          {onVerPerfil && (
+            <button type="button" className="btn btn-sm" onClick={onVerPerfil}>
+              Ver perfil
+            </button>
+          )}
         </h2>
         <span className={`badge ${saldo > 0 ? 'badge-danger' : 'badge-success'}`}>
           Saldo: {fmtMoney(saldo)}
@@ -79,16 +99,19 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
       </div>
 
       <p className="muted" style={{ fontSize: '0.85rem', marginTop: 0 }}>
-        Cliente desde {alumno.fechaInicio} · {meses} {meses === 1 ? 'mes' : 'meses'} devengados ·
+        Cliente desde {fmtFecha(alumno.fechaInicio)} · {meses} {meses === 1 ? 'mes' : 'meses'} devengados ·
         deuda generada {fmtMoney(deudaTotal)} · pagado {fmtMoney(pagado)}
         {bonificaciones.length > 0 &&
           ` · ${bonificaciones.length} ${bonificaciones.length === 1 ? 'mes bonificado' : 'meses bonificados'}`}
       </p>
 
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 18, border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+        <label style={{ fontSize: '0.78rem' }}>Bonificar un mes</label>
         <form onSubmit={handleBonificar} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label style={{ fontSize: '0.78rem' }}>Bonificar un mes (no asistió)</label>
+            <label className="muted" style={{ fontSize: '0.75rem' }}>
+              Mes
+            </label>
             <input
               type="month"
               value={mesABonificar}
@@ -96,40 +119,83 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
               required
             />
           </div>
-          <div className="field" style={{ marginBottom: 0, flex: 1 }}>
-            <label className="muted" style={{ fontSize: '0.78rem' }}>
-              Motivo (opcional)
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="muted" style={{ fontSize: '0.75rem' }}>
+              Tipo
+            </label>
+            <select value={tipoBonificacion} onChange={(e) => setTipoBonificacion(e.target.value)}>
+              <option value="porcentaje">% del mes</option>
+              <option value="monto">Monto fijo</option>
+            </select>
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="muted" style={{ fontSize: '0.75rem' }}>
+              {tipoBonificacion === 'porcentaje' ? 'Porcentaje' : 'Monto'}
             </label>
             <input
-              value={motivoBonificacion}
-              onChange={(e) => setMotivoBonificacion(e.target.value)}
-              placeholder="No asistió por..."
+              type="number"
+              min="0"
+              max={tipoBonificacion === 'porcentaje' ? 100 : undefined}
+              value={valorBonificacion}
+              onChange={(e) => setValorBonificacion(e.target.value)}
+              required
             />
           </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label className="muted" style={{ fontSize: '0.75rem' }}>
+              Motivo
+            </label>
+            <select value={motivoTipo} onChange={(e) => setMotivoTipo(e.target.value)}>
+              <option value="no_asistio">No asistió</option>
+              <option value="medio_mes">Comienzo a medio mes</option>
+              <option value="libre">Texto libre</option>
+            </select>
+          </div>
+          {motivoTipo === 'libre' && (
+            <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+              <label className="muted" style={{ fontSize: '0.75rem' }}>
+                Detalle
+              </label>
+              <input
+                value={motivoLibre}
+                onChange={(e) => setMotivoLibre(e.target.value)}
+                placeholder="Motivo..."
+                required
+              />
+            </div>
+          )}
           <button type="submit" className="btn btn-sm">
             Bonificar
           </button>
         </form>
 
         {bonificaciones.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
             {bonificaciones
               .slice()
               .sort((a, b) => b.mes.localeCompare(a.mes))
-              .map((b) => (
-                <span key={b.mes} className="badge badge-warning" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  {etiquetaMes(b.mes)}
-                  {b.motivo && ` · ${b.motivo}`}
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label="Quitar bonificación"
-                    onClick={() => quitarBonificacion(alumno.id, b.mes, bonificaciones)}
+              .map((b) => {
+                const tipo = b.tipo || 'porcentaje'
+                const valor = b.valor ?? 100
+                return (
+                  <span
+                    key={b.mes}
+                    className="badge badge-warning"
+                    style={{ display: 'flex', gap: 6, alignItems: 'center' }}
                   >
-                    ✕
-                  </button>
-                </span>
-              ))}
+                    {etiquetaMes(b.mes)} · {tipo === 'porcentaje' ? `${valor}%` : fmtMoney(valor)}
+                    {b.motivo && ` · ${b.motivo}`}
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      aria-label="Quitar bonificación"
+                      onClick={() => quitarBonificacion(alumno.id, b.mes, bonificaciones)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )
+              })}
           </div>
         )}
       </div>
@@ -155,7 +221,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false 
           <tbody>
             {movimientos.map((m) => (
               <tr key={m.id}>
-                <td>{m.fecha}</td>
+                <td>{fmtFecha(m.fecha)}</td>
                 <td>
                   {m.tipo === 'pago' ? (
                     <span className="badge badge-success">Pago</span>

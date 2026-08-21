@@ -11,6 +11,7 @@ import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import { subscribeTurnos, sincronizarAsignaciones, turnosActualesDeAlumno } from '../data/turnos'
 import AlumnoModal from '../components/AlumnoModal'
 import { useEspacio } from '../context/EspacioContext'
+import { fmtFecha } from '../utils/fechas'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -24,6 +25,8 @@ export default function AlumnosPage() {
   const [editando, setEditando] = useState(null)
   const [mostrarInactivos, setMostrarInactivos] = useState(false)
   const [busqueda, setBusqueda] = useState('')
+  const [ordenColumna, setOrdenColumna] = useState('nombre')
+  const [ordenAsc, setOrdenAsc] = useState(true)
 
   useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
   useEffect(() => subscribeActividades(setActividadesTodas), [])
@@ -33,6 +36,39 @@ export default function AlumnosPage() {
   const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
   const turnos = turnosTodos.filter((t) => t.espacioId === espacioActualId)
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
+  const turnosPorId = Object.fromEntries(turnos.map((t) => [t.id, t]))
+
+  function turnoTexto(alumno) {
+    if (!alumno.turnos?.length) return ''
+    return alumno.turnos
+      .map((t) => turnosPorId[t.turnoId]?.nombre)
+      .filter(Boolean)
+      .join(' + ')
+  }
+
+  const columnas = {
+    nombre: (a) => `${a.apellido}, ${a.nombre}`.toLowerCase(),
+    turno: (a) => turnoTexto(a).toLowerCase(),
+    actividad: (a) => (actividadesPorId[a.actividadId]?.nombre || '').toLowerCase(),
+    dias: (a) => a.diasPorSemana || 0,
+    monto: (a) => montoMensualEfectivo(a, actividades),
+    fechaInicio: (a) => a.fechaInicio || '',
+    estado: (a) => (a.activo === false ? 0 : 1),
+  }
+
+  function ordenarPor(columna) {
+    if (ordenColumna === columna) {
+      setOrdenAsc((v) => !v)
+    } else {
+      setOrdenColumna(columna)
+      setOrdenAsc(true)
+    }
+  }
+
+  function flechaDe(columna) {
+    if (ordenColumna !== columna) return null
+    return ordenAsc ? ' ▲' : ' ▼'
+  }
 
   async function handleSave(datos) {
     if (editando) {
@@ -64,6 +100,13 @@ export default function AlumnosPage() {
   const visibles = alumnos
     .filter((a) => mostrarInactivos || a.activo !== false)
     .filter((a) => coincideBusqueda(a, busqueda))
+    .sort((x, y) => {
+      const accessor = columnas[ordenColumna]
+      const vx = accessor(x)
+      const vy = accessor(y)
+      const cmp = typeof vx === 'number' ? vx - vy : String(vx).localeCompare(String(vy), 'es')
+      return ordenAsc ? cmp : -cmp
+    })
 
   return (
     <div>
@@ -103,12 +146,27 @@ export default function AlumnosPage() {
           <table>
             <thead>
               <tr>
-                <th>Nombre</th>
-                <th>Actividad</th>
-                <th>Días/semana</th>
-                <th>Monto mensual</th>
-                <th>Fecha inicio</th>
-                <th>Estado</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('nombre')}>
+                  Nombre{flechaDe('nombre')}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('actividad')}>
+                  Actividad{flechaDe('actividad')}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('turno')}>
+                  Turno{flechaDe('turno')}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('dias')}>
+                  Días/semana{flechaDe('dias')}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('monto')}>
+                  Monto mensual{flechaDe('monto')}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('fechaInicio')}>
+                  Fecha inicio{flechaDe('fechaInicio')}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('estado')}>
+                  Estado{flechaDe('estado')}
+                </th>
                 <th></th>
               </tr>
             </thead>
@@ -121,6 +179,7 @@ export default function AlumnosPage() {
                   <td>
                     {actividadesPorId[a.actividadId]?.nombre || <span className="muted">—</span>}
                   </td>
+                  <td className="muted">{turnoTexto(a) || '—'}</td>
                   <td>{a.diasPorSemana}</td>
                   <td>
                     {fmtMoney(montoMensualEfectivo(a, actividades))}
@@ -130,7 +189,7 @@ export default function AlumnosPage() {
                       </span>
                     )}
                   </td>
-                  <td>{a.fechaInicio}</td>
+                  <td>{fmtFecha(a.fechaInicio)}</td>
                   <td>
                     {a.activo === false ? (
                       <span className="badge badge-danger">Inactivo</span>

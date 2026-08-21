@@ -5,6 +5,7 @@ import { subscribeTodosMovimientos, montoViviDePago, montoPropioDePago } from '.
 import { subscribePagosVivi, eliminarPagoVivi, actualizarPagoVivi } from '../data/pagosVivi'
 import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
+import { fmtFecha } from '../utils/fechas'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -168,7 +169,7 @@ export default function CuentaViviModal({ onClose }) {
               <tbody>
                 {filas.map((f) => (
                   <tr key={f.id}>
-                    <td>{f.fecha}</td>
+                    <td>{fmtFecha(f.fecha)}</td>
                     <td>{f.alumna}</td>
                     <td className="muted">{f.actividad}</td>
                     <td>

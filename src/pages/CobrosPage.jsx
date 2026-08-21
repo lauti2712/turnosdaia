@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { subscribeAlumnos, coincideBusqueda } from '../data/alumnos'
+import { subscribeAlumnos, actualizarAlumno, coincideBusqueda } from '../data/alumnos'
 import { subscribeActividades } from '../data/actividades'
+import { subscribeTurnos, sincronizarAsignaciones, turnosActualesDeAlumno } from '../data/turnos'
 import {
   subscribeTodosMovimientos,
   calcularSaldo,
@@ -12,6 +13,7 @@ import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
 import CuentaViviModal from '../components/CuentaViviModal'
+import AlumnoModal from '../components/AlumnoModal'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
@@ -22,9 +24,11 @@ export default function CobrosPage() {
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const [alumnosTodos, setAlumnosTodos] = useState([])
   const [actividadesTodas, setActividadesTodas] = useState([])
+  const [turnosTodos, setTurnosTodos] = useState([])
   const [movimientosTodos, setMovimientosTodos] = useState([])
   const [pagosViviTodos, setPagosViviTodos] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
+  const [modalPerfilAbierto, setModalPerfilAbierto] = useState(false)
   const [soloDeudores, setSoloDeudores] = useState(false)
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
   const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false)
@@ -33,11 +37,13 @@ export default function CobrosPage() {
 
   useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
   useEffect(() => subscribeActividades(setActividadesTodas), [])
+  useEffect(() => subscribeTurnos(setTurnosTodos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
   useEffect(() => subscribePagosVivi(setPagosViviTodos), [])
 
   const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
   const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
+  const turnos = turnosTodos.filter((t) => t.espacioId === espacioActualId)
   const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
   const pagosVivi = pagosViviTodos.filter((p) => p.espacioId === espacioActualId)
 
@@ -79,6 +85,12 @@ export default function CobrosPage() {
   const totalAdeudado = filasCompletas.reduce((acc, f) => acc + Math.max(f.saldo, 0), 0)
 
   const seleccionado = activos.find((a) => a.id === seleccionadoId)
+
+  async function handleGuardarPerfil(datos) {
+    const turnosAntes = turnosActualesDeAlumno(seleccionado.id, turnos)
+    await actualizarAlumno(seleccionado.id, datos)
+    await sincronizarAsignaciones(seleccionado.id, turnosAntes, datos.turnos)
+  }
 
   return (
     <div>
@@ -202,9 +214,24 @@ export default function CobrosPage() {
                 ✕
               </button>
             </div>
-            <CtaCteDetalle alumno={seleccionado} actividades={actividades} sinTarjeta />
+            <CtaCteDetalle
+              alumno={seleccionado}
+              actividades={actividades}
+              sinTarjeta
+              onVerPerfil={() => setModalPerfilAbierto(true)}
+            />
           </div>
         </div>
+      )}
+
+      {modalPerfilAbierto && seleccionado && (
+        <AlumnoModal
+          alumno={seleccionado}
+          actividades={actividades}
+          turnos={turnos}
+          onSave={handleGuardarPerfil}
+          onClose={() => setModalPerfilAbierto(false)}
+        />
       )}
 
       {modalPagoAbierto && <NuevoPagoModal onClose={() => setModalPagoAbierto(false)} />}

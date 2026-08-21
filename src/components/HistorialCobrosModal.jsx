@@ -8,6 +8,7 @@ import {
 } from '../data/movimientos'
 import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
+import { fmtFecha } from '../utils/fechas'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
@@ -126,7 +127,7 @@ export default function HistorialCobrosModal({ onClose }) {
                   const alumno = alumnosPorId[m.alumnoId]
                   return (
                     <tr key={m.id}>
-                      <td>{m.fecha}</td>
+                      <td>{fmtFecha(m.fecha)}</td>
                       <td>{alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)'}</td>
                       <td>
                         {m.tipo === 'pago' ? (
