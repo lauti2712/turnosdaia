@@ -39,8 +39,14 @@ export default function AlumnosPage() {
   const turnosPorId = Object.fromEntries(turnos.map((t) => [t.id, t]))
 
   function turnoTexto(alumno) {
-    if (!alumno.turnos?.length) return ''
-    return alumno.turnos
+    // Si el alumno nunca se guardó desde la ficha nueva, alumno.turnos está
+    // vacío aunque sí tenga una asignación real (hecha desde la grilla de
+    // Turnos) — se reconstruye leyendo turno.dias directamente.
+    const asignaciones = alumno.turnos?.length
+      ? alumno.turnos
+      : turnosActualesDeAlumno(alumno.id, turnos)
+    if (!asignaciones.length) return ''
+    return asignaciones
       .map((t) => turnosPorId[t.turnoId]?.nombre)
       .filter(Boolean)
       .join(' + ')
