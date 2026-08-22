@@ -11,7 +11,7 @@ import {
   montoPropioDePago,
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
-import { bonificarMes, quitarBonificacion } from '../data/alumnos'
+import { bonificarMes, quitarBonificacion, DESDE_INICIAL } from '../data/alumnos'
 import MovimientoForm from './MovimientoForm'
 import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
@@ -53,6 +53,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
   const [motivoLibre, setMotivoLibre] = useState('')
 
   const bonificaciones = alumno.bonificaciones || []
+  const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
 
   async function handleBonificar(e) {
     e.preventDefault()
@@ -104,6 +105,29 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
         {bonificaciones.length > 0 &&
           ` · ${bonificaciones.length} ${bonificaciones.length === 1 ? 'mes bonificado' : 'meses bonificados'}`}
       </p>
+
+      {alumno.historialTarifas?.length > 0 && (
+        <p className="muted" style={{ fontSize: '0.8rem' }}>
+          <strong>Historial de tarifa:</strong>{' '}
+          {[...alumno.historialTarifas]
+            .sort((a, b) => a.desde.localeCompare(b.desde))
+            .map((t, i) => {
+              const desdeTexto = t.desde === DESDE_INICIAL ? 'el inicio' : etiquetaMes(t.desde)
+              const precioTexto =
+                t.precioManual != null
+                  ? `${fmtMoney(t.precioManual)} (manual)`
+                  : `${t.diasPorSemana} días/semana${
+                      actividadesPorId[t.actividadId] ? ' — ' + actividadesPorId[t.actividadId].nombre : ''
+                    }`
+              return (
+                <span key={i}>
+                  {i > 0 && ' → '}
+                  Desde {desdeTexto}: {precioTexto}
+                </span>
+              )
+            })}
+        </p>
+      )}
 
       <div style={{ marginBottom: 18, border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
         <label style={{ fontSize: '0.78rem' }}>Bonificar un mes</label>

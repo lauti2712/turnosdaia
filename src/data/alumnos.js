@@ -31,6 +31,7 @@ function normalizarAlumno({
   extra,
   turnos,
   multiTurno,
+  historialTarifas,
 }) {
   return {
     nombre,
@@ -42,7 +43,62 @@ function normalizarAlumno({
     extra: extra || [],
     turnos: turnos || [],
     multiTurno: !!multiTurno,
+    historialTarifas: historialTarifas || [],
   }
+}
+
+// Fecha centinela para la primera versión de tarifa de un alumno, cuando se
+// arma el historial por primera vez — cubre "desde siempre" sin necesitar
+// saber la fecha real del cambio anterior.
+export const DESDE_INICIAL = '2000-01'
+
+function normPrecioManual(v) {
+  return v === '' || v == null ? null : Number(v)
+}
+
+export function tarifasIguales(a, b) {
+  return (
+    (a.actividadId || null) === (b.actividadId || null) &&
+    Number(a.diasPorSemana || 0) === Number(b.diasPorSemana || 0) &&
+    normPrecioManual(a.precioManual) === normPrecioManual(b.precioManual)
+  )
+}
+
+// Tarifa (actividad + días + precio manual) vigente para un alumno en un mes
+// dado. Si nunca tuvo un cambio registrado, usa sus campos actuales — así
+// los alumnos existentes siguen funcionando igual que siempre hasta que se
+// les carga el primer cambio de tarifa.
+export function tarifaVigente(alumno, mesId) {
+  const historial = alumno.historialTarifas || []
+  const validas = historial.filter((h) => h.desde <= mesId).sort((a, b) => a.desde.localeCompare(b.desde))
+  if (validas.length === 0) {
+    // ?? null/0 en vez de leer el campo tal cual: Firestore no acepta
+    // `undefined` en un documento, y alumnos viejos pueden no tener alguno
+    // de estos campos seteado todavía.
+    return {
+      actividadId: alumno.actividadId ?? null,
+      diasPorSemana: alumno.diasPorSemana ?? 0,
+      precioManual: alumno.precioManual ?? null,
+    }
+  }
+  return validas[validas.length - 1]
+}
+
+// Arma el historial actualizado al registrar un cambio de tarifa. Si es el
+// primer cambio de este alumno, primero sella cómo fue la tarifa desde
+// siempre (con sus campos actuales) para no perder esa referencia, y recién
+// después agrega/reemplaza la versión desde el mes elegido.
+export function conNuevaTarifa(alumno, tarifaNueva, mesDesde) {
+  const base = alumno.historialTarifas?.length
+    ? [...alumno.historialTarifas]
+    : [{ desde: DESDE_INICIAL, ...tarifaVigente(alumno, DESDE_INICIAL) }]
+  const idx = base.findIndex((h) => h.desde === mesDesde)
+  if (idx >= 0) {
+    base[idx] = { desde: mesDesde, ...tarifaNueva }
+  } else {
+    base.push({ desde: mesDesde, ...tarifaNueva })
+  }
+  return base
 }
 
 export function crearAlumno({ espacioId, ...datos }) {

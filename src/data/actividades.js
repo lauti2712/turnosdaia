@@ -1,6 +1,7 @@
 import { collection, doc, addDoc, updateDoc, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
 import { marcarEliminado } from './papelera'
+import { tarifaVigente } from './alumnos'
 
 const actividadesRef = collection(db, 'actividades')
 
@@ -76,17 +77,19 @@ export function eliminarActividad(id) {
   return marcarEliminado('actividades', id)
 }
 
-// Monto mensual real de un alumno en un mes dado: si tiene un precio manual
-// cargado, ese gana (aplica siempre, no tiene historial propio); si no, se
-// busca la tarifa vigente de su actividad en ese mes según los días por
-// semana. Por default es el mes actual (para mostrar la cuota vigente).
+// Monto mensual real de un alumno en un mes dado: primero se busca qué
+// tarifa (actividad + días + precio manual) tenía vigente ESE mes según su
+// historial propio — así un cambio de días o de precio manual no recalcula
+// retroactivamente los meses ya devengados. Por default es el mes actual
+// (para mostrar la cuota vigente).
 export function montoMensualEfectivo(alumno, actividades, mesId = mesActualId()) {
-  if (alumno.precioManual != null && alumno.precioManual !== '') {
-    return Number(alumno.precioManual) || 0
+  const tarifa = tarifaVigente(alumno, mesId)
+  if (tarifa.precioManual != null && tarifa.precioManual !== '') {
+    return Number(tarifa.precioManual) || 0
   }
-  const actividad = actividades.find((a) => a.id === alumno.actividadId)
+  const actividad = actividades.find((a) => a.id === tarifa.actividadId)
   if (!actividad) return 0
-  return precioVigente(actividad, mesId)?.[alumno.diasPorSemana] || 0
+  return precioVigente(actividad, mesId)?.[tarifa.diasPorSemana] || 0
 }
 
 export function porcentajeViviDeAlumno(alumno, actividades) {

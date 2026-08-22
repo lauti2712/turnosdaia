@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { montoMensualEfectivo } from '../data/actividades'
+import { montoMensualEfectivo, mesActualId } from '../data/actividades'
+import { tarifaVigente, tarifasIguales, conNuevaTarifa } from '../data/alumnos'
 import { DIAS_LABEL, turnosActualesDeAlumno } from '../data/turnos'
 
 const fmtMoney = (n) =>
@@ -48,6 +49,7 @@ export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, 
   const [multiTurno, setMultiTurno] = useState(alumno?.multiTurno ?? turnosIniciales.length > 1)
   const [usarPrecioManual, setUsarPrecioManual] = useState(alumno?.precioManual != null)
   const [guardando, setGuardando] = useState(false)
+  const [mesVigencia, setMesVigencia] = useState(mesActualId())
 
   function setCampo(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }))
@@ -115,23 +117,39 @@ export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, 
   }
 
   const totalDias = turnosSel.reduce((acc, t) => acc + t.dias.length, 0)
+  const precioManualFinal = usarPrecioManual ? form.precioManual : ''
 
   const precioCalculado = montoMensualEfectivo(
     { actividadId: form.actividadId, diasPorSemana: totalDias, precioManual: null },
     actividades,
   )
 
+  // Si esto es una edición y lo que se está por guardar (actividad, días o
+  // precio manual) difiere de la tarifa vigente hoy, hace falta saber desde
+  // cuándo rige el cambio para no reescribir la cuenta corriente ya
+  // devengada — se pide el mes recién en ese caso.
+  const tarifaNueva = {
+    actividadId: form.actividadId || null,
+    diasPorSemana: totalDias,
+    precioManual: precioManualFinal === '' || precioManualFinal == null ? null : Number(precioManualFinal),
+  }
+  const cambioTarifa = !!alumno && !tarifasIguales(tarifaVigente(alumno, mesActualId()), tarifaNueva)
+
   async function handleSubmit(e) {
     e.preventDefault()
     setGuardando(true)
     try {
+      const historialTarifas = cambioTarifa
+        ? conNuevaTarifa(alumno, tarifaNueva, mesVigencia)
+        : alumno?.historialTarifas || []
       await onSave({
         ...form,
         diasPorSemana: totalDias,
         turnos: turnosSel.filter((t) => t.turnoId && t.dias.length > 0),
         multiTurno,
-        precioManual: usarPrecioManual ? form.precioManual : '',
+        precioManual: precioManualFinal,
         extra: form.extra.filter((x) => x.clave.trim()),
+        historialTarifas,
       })
       onClose()
     } finally {
@@ -313,6 +331,24 @@ export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, 
                 Usar un monto manual distinto (beca, descuento, arreglo especial)
               </label>
             </div>
+
+            {cambioTarifa && (
+              <div
+                className="field"
+                style={{ background: 'var(--warning-bg)', padding: 10, borderRadius: 8 }}
+              >
+                <label style={{ fontSize: '0.82rem' }}>Este cambio afecta la tarifa — ¿desde cuándo rige?</label>
+                <input
+                  type="month"
+                  value={mesVigencia}
+                  onChange={(e) => setMesVigencia(e.target.value)}
+                  required
+                />
+                <div className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
+                  Los meses anteriores a ese mes van a seguir calculándose con la tarifa anterior.
+                </div>
+              </div>
+            )}
 
             <div className="field">
               <label>Fecha de inicio</label>
