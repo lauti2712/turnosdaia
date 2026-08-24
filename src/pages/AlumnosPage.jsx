@@ -10,6 +10,7 @@ import {
 import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import { subscribeTurnos, sincronizarAsignaciones, turnosActualesDeAlumno } from '../data/turnos'
 import AlumnoModal from '../components/AlumnoModal'
+import CtaCteDetalle from '../components/CtaCteDetalle'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
 
@@ -28,6 +29,7 @@ export default function AlumnosPage() {
   const [turnosTodos, setTurnosTodos] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [modalCtaCteAbierto, setModalCtaCteAbierto] = useState(false)
   const [mostrarInactivos, setMostrarInactivos] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [ordenColumna, setOrdenColumna] = useState('nombre')
@@ -239,7 +241,21 @@ export default function AlumnosPage() {
           turnos={turnos}
           onSave={handleSave}
           onClose={() => setModalAbierto(false)}
+          onVerCtaCte={() => setModalCtaCteAbierto(true)}
         />
+      )}
+
+      {modalCtaCteAbierto && editando && (
+        <div className="modal-overlay" onClick={() => setModalCtaCteAbierto(false)}>
+          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="icon-btn" aria-label="Cerrar" onClick={() => setModalCtaCteAbierto(false)}>
+                ✕
+              </button>
+            </div>
+            <CtaCteDetalle alumno={editando} actividades={actividades} sinTarjeta />
+          </div>
+        </div>
       )}
     </div>
   )

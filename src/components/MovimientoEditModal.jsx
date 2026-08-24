@@ -1,7 +1,14 @@
 import { useState } from 'react'
 
 // tipo: 'pago' | 'ajuste' — determina qué campos mostrar.
-export default function MovimientoEditModal({ movimiento, tipo, socioNombre, onSave, onClose }) {
+export default function MovimientoEditModal({
+  movimiento,
+  tipo,
+  socioNombre,
+  conSocio = true,
+  onSave,
+  onClose,
+}) {
   const [monto, setMonto] = useState(movimiento.monto)
   const [fecha, setFecha] = useState(movimiento.fecha)
   const [formaPago, setFormaPago] = useState(movimiento.formaPago || '')
@@ -63,7 +70,7 @@ export default function MovimientoEditModal({ movimiento, tipo, socioNombre, onS
             <label>Descripción {tipo === 'ajuste' && '(motivo)'}</label>
             <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
           </div>
-          {tipo === 'pago' && (
+          {tipo === 'pago' && conSocio && (
             <label
               className="muted"
               style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.85rem', marginTop: 10 }}

@@ -27,7 +27,7 @@ function librasEnDia(turno, dia, alumnoId) {
   return Math.max((turno.cupoMaximo || 0) - ocupados, 0)
 }
 
-export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, onClose }) {
+export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, onClose, onVerCtaCte }) {
   const [form, setForm] = useState(
     alumno
       ? {
@@ -165,7 +165,14 @@ export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>{alumno ? 'Editar alumno' : 'Nuevo alumno'}</h3>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {alumno ? 'Editar alumno' : 'Nuevo alumno'}
+          {alumno && onVerCtaCte && (
+            <button type="button" className="btn btn-sm" onClick={onVerCtaCte}>
+              Ver cuenta corriente
+            </button>
+          )}
+        </h3>
         <form onSubmit={handleSubmit}>
           <div className="grid" style={{ gap: 10 }}>
             <div className="form-row">

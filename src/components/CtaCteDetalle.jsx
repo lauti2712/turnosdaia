@@ -12,6 +12,7 @@ import {
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
 import { bonificarMes, quitarBonificacion, DESDE_INICIAL } from '../data/alumnos'
+import { mostrarSocio } from '../data/espacios'
 import MovimientoForm from './MovimientoForm'
 import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
@@ -49,6 +50,7 @@ const MOTIVOS_PRESET = {
 export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false, onVerPerfil }) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const conSocio = mostrarSocio(espacioActual)
   const [movimientos, setMovimientos] = useState([])
   const [editando, setEditando] = useState(null)
   const [mesABonificar, setMesABonificar] = useState(mesActualId())
@@ -59,6 +61,14 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
 
   const bonificaciones = alumno.bonificaciones || []
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
+
+  const precioMesABonificar = montoMensualEfectivo(alumno, actividades, mesABonificar)
+  const valorBonificacionNum = Number(valorBonificacion) || 0
+  const descuentoPreview =
+    tipoBonificacion === 'porcentaje'
+      ? precioMesABonificar * (valorBonificacionNum / 100)
+      : valorBonificacionNum
+  const pendientePreview = Math.max(precioMesABonificar - descuentoPreview, 0)
 
   async function handleBonificar(e) {
     e.preventDefault()
@@ -198,6 +208,11 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
           </button>
         </form>
 
+        <p className="muted" style={{ fontSize: '0.78rem', marginTop: 8, marginBottom: 0 }}>
+          Mes {etiquetaMes(mesABonificar)}: {fmtMoney(precioMesABonificar)} · descuento{' '}
+          {fmtMoney(descuentoPreview)} · quedaría pendiente {fmtMoney(pendientePreview)}
+        </p>
+
         {bonificaciones.length > 0 && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
             {bonificaciones
@@ -257,7 +272,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
                   ) : (
                     <span className="badge badge-warning">Ajuste</span>
                   )}
-                  {m.tipo === 'pago' && m.abonadoAVivi && (
+                  {conSocio && m.tipo === 'pago' && m.abonadoAVivi && (
                     <span className="badge badge-warning" style={{ marginLeft: 4 }}>
                       Cobró {socioNombre}
                     </span>
@@ -265,7 +280,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
                 </td>
                 <td>{fmtMoney(m.monto)}</td>
                 <td className="muted">
-                  {m.tipo === 'pago' && m.abonadoAVivi ? (
+                  {conSocio && m.tipo === 'pago' && m.abonadoAVivi ? (
                     <>
                       {m.porcentajeVivi ?? 0}% {socioNombre} ({fmtMoney(montoViviDePago(m))}) · propio (
                       {fmtMoney(montoPropioDePago(m))})
@@ -298,6 +313,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
           movimiento={editando}
           tipo={editando.tipo}
           socioNombre={socioNombre}
+          conSocio={conSocio}
           onSave={handleGuardarEdicion}
           onClose={() => setEditando(null)}
         />

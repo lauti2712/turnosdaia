@@ -7,6 +7,7 @@ import {
   actualizarMovimientoAjuste,
 } from '../data/movimientos'
 import MovimientoEditModal from './MovimientoEditModal'
+import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
 
@@ -42,6 +43,7 @@ function etiquetaMes(mesId) {
 export default function HistorialCobrosModal({ onClose }) {
   const { espacioActualId, espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const conSocio = mostrarSocio(espacioActual)
   const [alumnos, setAlumnos] = useState([])
   const [movimientosTodos, setMovimientosTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
@@ -140,7 +142,7 @@ export default function HistorialCobrosModal({ onClose }) {
                         ) : (
                           <span className="badge badge-warning">Ajuste</span>
                         )}
-                        {m.abonadoAVivi && (
+                        {conSocio && m.abonadoAVivi && (
                           <span className="badge badge-warning" style={{ marginLeft: 4 }}>
                             {socioNombre} {m.porcentajeVivi ?? 100}%
                           </span>
@@ -172,6 +174,7 @@ export default function HistorialCobrosModal({ onClose }) {
           movimiento={editando}
           tipo={editando.tipo}
           socioNombre={socioNombre}
+          conSocio={conSocio}
           onSave={handleGuardarEdicion}
           onClose={() => setEditando(null)}
         />

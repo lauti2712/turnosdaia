@@ -13,21 +13,31 @@ export function subscribeEspacios(callback) {
   })
 }
 
-export function crearEspacio({ nombre, socioNombre }) {
+export function crearEspacio({ nombre, socioNombre, modoCobroSocio, montoFijoSocio }) {
   return addDoc(espaciosRef, {
     nombre,
-    socioNombre,
+    socioNombre: modoCobroSocio === 'ninguno' ? '' : socioNombre,
+    modoCobroSocio: modoCobroSocio || 'porActividad',
+    montoFijoSocio: modoCobroSocio === 'montoFijo' ? Number(montoFijoSocio) || 0 : null,
     creadoTs: Date.now(),
   })
 }
 
-export function actualizarEspacio(id, { nombre, socioNombre }) {
+export function actualizarEspacio(id, { nombre, socioNombre, modoCobroSocio, montoFijoSocio }) {
   return updateDoc(doc(db, 'espacios', id), {
     nombre,
-    socioNombre,
+    socioNombre: modoCobroSocio === 'ninguno' ? '' : socioNombre,
+    modoCobroSocio: modoCobroSocio || 'porActividad',
+    montoFijoSocio: modoCobroSocio === 'montoFijo' ? Number(montoFijoSocio) || 0 : null,
   })
 }
 
 export function eliminarEspacio(id) {
   return marcarEliminado('espacios', id)
+}
+
+// Espacios creados antes de este campo no tienen `modoCobroSocio` — se
+// tratan como 'porActividad' para no cambiarles el comportamiento actual.
+export function mostrarSocio(espacio) {
+  return (espacio?.modoCobroSocio || 'porActividad') === 'porActividad'
 }

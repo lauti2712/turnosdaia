@@ -13,6 +13,7 @@ import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
 import CuentaViviModal from '../components/CuentaViviModal'
 import AlumnoModal from '../components/AlumnoModal'
+import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
@@ -26,6 +27,7 @@ const fmtMoney = (n) =>
 export default function CobrosPage() {
   const { espacioActualId, espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const conSocio = mostrarSocio(espacioActual)
   const [alumnosTodos, setAlumnosTodos] = useState([])
   const [actividadesTodas, setActividadesTodas] = useState([])
   const [turnosTodos, setTurnosTodos] = useState([])
@@ -86,6 +88,10 @@ export default function CobrosPage() {
   const totalMeCorresponde = pagosDelMes.reduce((acc, m) => acc + montoPropioDePago(m), 0)
   const totalCorrespondeAVivi = pagosDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
 
+  // Sin reparto por actividad (monto fijo o sin socio): un solo total, sin
+  // separar por porcentaje.
+  const cobradoTotalDelMes = pagosDelMes.reduce((acc, m) => acc + m.monto, 0)
+
   // Deuda pendiente: es un acumulado de siempre, no de este mes.
   const totalAdeudado = filasCompletas.reduce((acc, f) => acc + Math.max(f.saldo, 0), 0)
 
@@ -117,9 +123,11 @@ export default function CobrosPage() {
           <button className="btn" onClick={() => setModalHistorialAbierto(true)}>
             Ver historial
           </button>
-          <button className="btn" onClick={() => setModalViviAbierto(true)}>
-            Cuenta de {socioNombre}
-          </button>
+          {conSocio && (
+            <button className="btn" onClick={() => setModalViviAbierto(true)}>
+              Cuenta de {socioNombre}
+            </button>
+          )}
         </div>
       </div>
 
@@ -127,54 +135,71 @@ export default function CobrosPage() {
         Cobros de este mes — la deuda pendiente de abajo es acumulada, no solo de este mes.
       </p>
       <div className="stats-row">
-        <div className="stat-tile stat-tile-wide">
-          <div className="stat-label">Lo mío</div>
-          <div className="stat-split">
-            <div>
-              <div className="stat-split-label">Cobrado por mí</div>
-              <div className="stat-split-value" style={{ color: 'var(--success)' }}>
-                {fmtMoney(cobradoPorMi)}
+        {conSocio ? (
+          <>
+            <div className="stat-tile stat-tile-wide">
+              <div className="stat-label">Lo mío</div>
+              <div className="stat-split">
+                <div>
+                  <div className="stat-split-label">Cobrado por mí</div>
+                  <div className="stat-split-value" style={{ color: 'var(--success)' }}>
+                    {fmtMoney(cobradoPorMi)}
+                  </div>
+                </div>
+                <div>
+                  <div className="stat-split-label">Corresponde a {socioNombre}</div>
+                  <div className="stat-split-value">{fmtMoney(corresponderiaAVivi)}</div>
+                </div>
               </div>
             </div>
-            <div>
-              <div className="stat-split-label">Corresponde a {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(corresponderiaAVivi)}</div>
-            </div>
-          </div>
-        </div>
-        <div
-          className="stat-tile stat-tile-wide"
-          style={{ cursor: 'pointer' }}
-          onClick={() => setModalViviAbierto(true)}
-          title={`Ver los cobros de alumnas que le pagaron a ${socioNombre} este mes`}
-        >
-          <div className="stat-label">{socioNombre}</div>
-          <div className="stat-split">
-            <div>
-              <div className="stat-split-label">Total cobrado por {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
-            </div>
-            <div>
-              <div className="stat-split-label">Me corresponde a mí</div>
-              <div className="stat-split-value">{fmtMoney(meCorrespondeDeVivi)}</div>
-            </div>
-          </div>
-        </div>
-        <div className="stat-tile stat-tile-wide">
-          <div className="stat-label">Totales del mes (neto, sin importar quién cobró)</div>
-          <div className="stat-split">
-            <div>
-              <div className="stat-split-label">Me corresponde a mí</div>
-              <div className="stat-split-value" style={{ color: 'var(--success)' }}>
-                {fmtMoney(totalMeCorresponde)}
+            <div
+              className="stat-tile stat-tile-wide"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setModalViviAbierto(true)}
+              title={`Ver los cobros de alumnas que le pagaron a ${socioNombre} este mes`}
+            >
+              <div className="stat-label">{socioNombre}</div>
+              <div className="stat-split">
+                <div>
+                  <div className="stat-split-label">Total cobrado por {socioNombre}</div>
+                  <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
+                </div>
+                <div>
+                  <div className="stat-split-label">Me corresponde a mí</div>
+                  <div className="stat-split-value">{fmtMoney(meCorrespondeDeVivi)}</div>
+                </div>
               </div>
             </div>
-            <div>
-              <div className="stat-split-label">Corresponde a {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(totalCorrespondeAVivi)}</div>
+            <div className="stat-tile stat-tile-wide">
+              <div className="stat-label">Totales del mes (neto, sin importar quién cobró)</div>
+              <div className="stat-split">
+                <div>
+                  <div className="stat-split-label">Me corresponde a mí</div>
+                  <div className="stat-split-value" style={{ color: 'var(--success)' }}>
+                    {fmtMoney(totalMeCorresponde)}
+                  </div>
+                </div>
+                <div>
+                  <div className="stat-split-label">Corresponde a {socioNombre}</div>
+                  <div className="stat-split-value">{fmtMoney(totalCorrespondeAVivi)}</div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="stat-tile">
+            <div className="stat-label">Cobrado este mes</div>
+            <div className="stat-value" style={{ color: 'var(--success)' }}>
+              {fmtMoney(cobradoTotalDelMes)}
             </div>
           </div>
-        </div>
+        )}
+        {espacioActual?.modoCobroSocio === 'montoFijo' && (
+          <div className="stat-tile">
+            <div className="stat-label">{socioNombre} (monto fijo)</div>
+            <div className="stat-value">{fmtMoney(espacioActual.montoFijoSocio)}</div>
+          </div>
+        )}
         <div className="stat-tile">
           <div className="stat-label">Pendiente por cobrar (acumulado)</div>
           <div className="stat-value" style={{ color: 'var(--danger)' }}>
@@ -255,6 +280,7 @@ export default function CobrosPage() {
           turnos={turnos}
           onSave={handleGuardarPerfil}
           onClose={() => setModalPerfilAbierto(false)}
+          onVerCtaCte={() => setModalPerfilAbierto(false)}
         />
       )}
 
@@ -264,7 +290,7 @@ export default function CobrosPage() {
         <HistorialCobrosModal onClose={() => setModalHistorialAbierto(false)} />
       )}
 
-      {modalViviAbierto && <CuentaViviModal onClose={() => setModalViviAbierto(false)} />}
+      {conSocio && modalViviAbierto && <CuentaViviModal onClose={() => setModalViviAbierto(false)} />}
     </div>
   )
 }

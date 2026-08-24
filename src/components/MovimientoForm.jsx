@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { registrarPago } from '../data/movimientos'
 import { porcentajeViviDeAlumno } from '../data/actividades'
+import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
@@ -16,6 +17,7 @@ const fmtMoney = (n) =>
 export default function MovimientoForm({ alumno, actividades = [], onGuardado }) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const conSocio = mostrarSocio(espacioActual)
   const [monto, setMonto] = useState(alumno.montoMensual || '')
   const [fecha, setFecha] = useState(hoy())
   const [formaPago, setFormaPago] = useState('')
@@ -44,8 +46,8 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
         fecha,
         formaPago,
         descripcion,
-        abonadoAVivi,
-        porcentajeVivi,
+        abonadoAVivi: conSocio ? abonadoAVivi : false,
+        porcentajeVivi: conSocio ? porcentajeVivi : 0,
       })
       setMonto(alumno.montoMensual || '')
       setDescripcion('')
@@ -86,28 +88,30 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
         <label>Descripción</label>
         <input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
       </div>
-      <div style={{ marginTop: 10 }}>
-        <label
-          className="muted"
-          style={{
-            display: 'flex',
-            gap: 6,
-            alignItems: 'center',
-            fontSize: '0.85rem',
-          }}
-        >
-          <input
-            type="checkbox"
-            style={{ width: 'auto' }}
-            checked={abonadoAVivi}
-            onChange={(e) => setAbonadoAVivi(e.target.checked)}
-          />
-          La alumna le pagó directamente a {socioNombre} (no a mí)
-        </label>
-        <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
-          {fmtMoney(montoVivi)} ({porcentajeVivi}%) corresponde a {socioNombre}, {fmtMoney(montoPropio)} a mí.
+      {conSocio && (
+        <div style={{ marginTop: 10 }}>
+          <label
+            className="muted"
+            style={{
+              display: 'flex',
+              gap: 6,
+              alignItems: 'center',
+              fontSize: '0.85rem',
+            }}
+          >
+            <input
+              type="checkbox"
+              style={{ width: 'auto' }}
+              checked={abonadoAVivi}
+              onChange={(e) => setAbonadoAVivi(e.target.checked)}
+            />
+            La alumna le pagó directamente a {socioNombre} (no a mí)
+          </label>
+          <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
+            {fmtMoney(montoVivi)} ({porcentajeVivi}%) corresponde a {socioNombre}, {fmtMoney(montoPropio)} a mí.
+          </div>
         </div>
-      </div>
+      )}
       <div style={{ marginTop: 10 }}>
         <button type="submit" className="btn btn-primary" disabled={guardando}>
           Registrar pago

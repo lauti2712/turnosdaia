@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DIAS_PRECIO, precioVigente, mesActualId } from '../data/actividades'
+import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 
 const ACTIVIDAD_VACIA = { nombre: '', porcentajeVivi: 50, precios: {} }
@@ -7,6 +8,7 @@ const ACTIVIDAD_VACIA = { nombre: '', porcentajeVivi: 50, precios: {} }
 export default function ActividadModal({ actividad, onSave, onClose }) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const conSocio = mostrarSocio(espacioActual)
   const [form, setForm] = useState(
     actividad
       ? { ...ACTIVIDAD_VACIA, ...actividad, precios: { ...precioVigente(actividad, mesActualId()) } }
@@ -50,17 +52,19 @@ export default function ActividadModal({ actividad, onSave, onClose }) {
                   required
                 />
               </div>
-              <div className="field">
-                <label>% para {socioNombre}</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={form.porcentajeVivi}
-                  onChange={(e) => setCampo('porcentajeVivi', e.target.value)}
-                  required
-                />
-              </div>
+              {conSocio && (
+                <div className="field">
+                  <label>% para {socioNombre}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={form.porcentajeVivi}
+                    onChange={(e) => setCampo('porcentajeVivi', e.target.value)}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div className="field">

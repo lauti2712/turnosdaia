@@ -9,6 +9,7 @@ import {
   DIAS_PRECIO,
 } from '../data/actividades'
 import ActividadModal from '../components/ActividadModal'
+import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
@@ -22,6 +23,7 @@ const fmtMoney = (n) =>
 export default function ActividadesPage() {
   const { espacioActualId, espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const conSocio = mostrarSocio(espacioActual)
   const [actividadesTodas, setActividadesTodas] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
@@ -80,7 +82,9 @@ export default function ActividadesPage() {
               <div className="page-title" style={{ marginBottom: 10 }}>
                 <div>
                   <strong>{act.nombre}</strong>
-                  <span className="muted"> · {act.porcentajeVivi}% para {socioNombre}</span>
+                  {conSocio && (
+                    <span className="muted"> · {act.porcentajeVivi}% para {socioNombre}</span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button className="btn btn-sm" onClick={() => abrirEditar(act)}>

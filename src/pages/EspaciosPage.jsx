@@ -3,6 +3,21 @@ import { useEspacio } from '../context/EspacioContext'
 import { crearEspacio, actualizarEspacio, eliminarEspacio } from '../data/espacios'
 import EspacioModal from '../components/EspacioModal'
 
+const fmtMoney = (n) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n || 0)
+
+function resumenCobro(esp) {
+  const modo = esp.modoCobroSocio || 'porActividad'
+  if (modo === 'ninguno') return 'sin socio'
+  if (modo === 'montoFijo') return `socio: ${esp.socioNombre} · monto fijo ${fmtMoney(esp.montoFijoSocio)}`
+  return `socio: ${esp.socioNombre} · % por actividad`
+}
+
 export default function EspaciosPage() {
   const { espacios, espacioActualId, setEspacioActualId } = useEspacio()
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -55,7 +70,7 @@ export default function EspaciosPage() {
             <div className="page-title" style={{ marginBottom: 0 }}>
               <div>
                 <strong>{esp.nombre}</strong>
-                <span className="muted"> · socio: {esp.socioNombre}</span>
+                <span className="muted"> · {resumenCobro(esp)}</span>
                 {esp.id === espacioActualId && (
                   <span className="badge badge-success" style={{ marginLeft: 8 }}>
                     Activo
