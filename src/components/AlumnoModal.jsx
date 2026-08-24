@@ -4,7 +4,12 @@ import { tarifaVigente, tarifasIguales, conNuevaTarifa } from '../data/alumnos'
 import { DIAS_LABEL, turnosActualesDeAlumno } from '../data/turnos'
 
 const fmtMoney = (n) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n || 0)
 
 const ALUMNO_VACIO = {
   nombre: '',

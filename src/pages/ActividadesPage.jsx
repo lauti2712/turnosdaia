@@ -12,7 +12,12 @@ import ActividadModal from '../components/ActividadModal'
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n || 0)
 
 export default function ActividadesPage() {
   const { espacioActualId, espacioActual } = useEspacio()

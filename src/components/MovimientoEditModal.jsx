@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-// tipo: 'pago' | 'ajuste' | 'pagoSocio' — determina qué campos mostrar.
+// tipo: 'pago' | 'ajuste' — determina qué campos mostrar.
 export default function MovimientoEditModal({ movimiento, tipo, socioNombre, onSave, onClose }) {
   const [monto, setMonto] = useState(movimiento.monto)
   const [fecha, setFecha] = useState(movimiento.fecha)
@@ -25,7 +25,7 @@ export default function MovimientoEditModal({ movimiento, tipo, socioNombre, onS
     }
   }
 
-  const titulo = tipo === 'pago' ? 'Editar pago' : tipo === 'ajuste' ? 'Editar ajuste' : `Editar pago a ${socioNombre}`
+  const titulo = tipo === 'pago' ? 'Editar pago' : 'Editar ajuste'
 
   return (
     <div className="modal-overlay" onClick={onClose}>

@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { subscribeAlumnos } from '../data/alumnos'
 import { subscribeActividades } from '../data/actividades'
 import { subscribeTodosMovimientos, montoViviDePago, montoPropioDePago } from '../data/movimientos'
-import { subscribePagosVivi, eliminarPagoVivi, actualizarPagoVivi } from '../data/pagosVivi'
-import MovimientoEditModal from './MovimientoEditModal'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
 
 const fmtMoney = (n) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n || 0)
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -37,73 +40,40 @@ export default function CuentaViviModal({ onClose }) {
   const [alumnos, setAlumnos] = useState([])
   const [actividades, setActividades] = useState([])
   const [movimientosTodos, setMovimientosTodos] = useState([])
-  const [pagosViviTodos, setPagosViviTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
-  const [editando, setEditando] = useState(null)
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeActividades(setActividades), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
-  useEffect(() => subscribePagosVivi(setPagosViviTodos), [])
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
   const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
-  const pagosVivi = pagosViviTodos.filter((p) => p.espacioId === espacioActualId)
 
   const pagosDelMes = movimientos.filter(
     (m) => m.tipo === 'pago' && (m.fecha || '').startsWith(mes),
   )
   const pagosDeVivi = pagosDelMes.filter((m) => m.abonadoAVivi)
-  const pagosViviDelMes = pagosVivi.filter((p) => (p.fecha || '').startsWith(mes))
 
-  const mePagoVivi = pagosDeVivi.reduce((acc, m) => acc + montoPropioDePago(m), 0)
-  const lePagaronAVivi = pagosDeVivi.reduce((acc, m) => acc + montoViviDePago(m), 0)
-  const lePagueAVivi = pagosViviDelMes.reduce((acc, p) => acc + p.monto, 0)
-  const totalCobradoPorVivi = lePagaronAVivi + lePagueAVivi
+  const meCorresponde = pagosDeVivi.reduce((acc, m) => acc + montoPropioDePago(m), 0)
+  const totalCobradoPorVivi = pagosDeVivi.reduce((acc, m) => acc + m.monto, 0)
 
-  const filas = [
-    ...pagosDelMes.map((m) => {
+  const filas = pagosDeVivi
+    .map((m) => {
       const alumno = alumnosPorId[m.alumnoId]
       const actividad = actividadesPorId[alumno?.actividadId]
       return {
-        id: `pago-${m.id}`,
+        id: m.id,
         fecha: m.fecha,
         alumna: alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)',
         actividad: actividad?.nombre || '—',
-        cobro: m.abonadoAVivi ? 'socio' : 'yo',
         monto: m.monto,
         porcentaje: `${m.porcentajeVivi ?? 0}%`,
         deVivi: montoViviDePago(m),
         propio: montoPropioDePago(m),
-        eliminable: false,
       }
-    }),
-    ...pagosViviDelMes.map((p) => ({
-      id: `vivi-${p.id}`,
-      fecha: p.fecha,
-      alumna: '—',
-      actividad: '—',
-      cobro: `Le pagué a ${socioNombre}`,
-      monto: p.monto,
-      porcentaje: '—',
-      deVivi: p.monto,
-      propio: 0,
-      eliminable: true,
-      original: p,
-      onEliminar: () => eliminarPagoVivi(p.id),
-    })),
-  ].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
-
-  async function handleEliminar(fila) {
-    if (confirm(`¿Eliminar este pago a ${socioNombre} de ${fmtMoney(fila.monto)}?`)) {
-      await fila.onEliminar()
-    }
-  }
-
-  async function handleGuardarEdicion(datos) {
-    await actualizarPagoVivi(editando.original.id, datos)
-  }
+    })
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -129,27 +99,21 @@ export default function CuentaViviModal({ onClose }) {
           <div className="stat-tile stat-tile-wide">
             <div className="stat-split">
               <div>
-                <div className="stat-split-label">Me pagó {socioNombre}</div>
-                <div className="stat-split-value">{fmtMoney(mePagoVivi)}</div>
-              </div>
-              <div>
-                <div className="stat-split-label">Le pagaron a {socioNombre}</div>
-                <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
-              </div>
-              <div>
-                <div className="stat-split-label">Le pagué a {socioNombre}</div>
-                <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
-              </div>
-              <div className="stat-split-total">
                 <div className="stat-split-label">Total cobrado por {socioNombre}</div>
                 <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
+              </div>
+              <div>
+                <div className="stat-split-label">Me corresponde a mí</div>
+                <div className="stat-split-value">{fmtMoney(meCorresponde)}</div>
               </div>
             </div>
           </div>
         </div>
 
         {filas.length === 0 ? (
-          <div className="empty-state">No hay movimientos de {socioNombre} en {etiquetaMes(mes)}.</div>
+          <div className="empty-state">
+            Ninguna alumna le pagó directamente a {socioNombre} en {etiquetaMes(mes)}.
+          </div>
         ) : (
           <div className="scroll-x">
             <table>
@@ -158,12 +122,10 @@ export default function CuentaViviModal({ onClose }) {
                   <th>Fecha</th>
                   <th>Alumna</th>
                   <th>Actividad</th>
-                  <th>Cobró</th>
                   <th>Monto</th>
                   <th>% {socioNombre}</th>
                   <th>De {socioNombre}</th>
                   <th>Propio</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -172,31 +134,10 @@ export default function CuentaViviModal({ onClose }) {
                     <td>{fmtFecha(f.fecha)}</td>
                     <td>{f.alumna}</td>
                     <td className="muted">{f.actividad}</td>
-                    <td>
-                      {f.cobro === 'socio' ? (
-                        <span className="badge badge-warning">{socioNombre}</span>
-                      ) : f.cobro === 'yo' ? (
-                        <span className="badge badge-success">Yo</span>
-                      ) : (
-                        <span className="badge badge-danger">{f.cobro}</span>
-                      )}
-                    </td>
                     <td>{fmtMoney(f.monto)}</td>
                     <td className="muted">{f.porcentaje}</td>
                     <td>{fmtMoney(f.deVivi)}</td>
                     <td>{fmtMoney(f.propio)}</td>
-                    <td>
-                      {f.eliminable && (
-                        <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                          <button className="btn btn-sm" onClick={() => setEditando(f)}>
-                            Editar
-                          </button>
-                          <button className="icon-btn" aria-label="Eliminar" onClick={() => handleEliminar(f)}>
-                            ✕
-                          </button>
-                        </div>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -204,16 +145,6 @@ export default function CuentaViviModal({ onClose }) {
           </div>
         )}
       </div>
-
-      {editando && (
-        <MovimientoEditModal
-          movimiento={editando.original}
-          tipo="pagoSocio"
-          socioNombre={socioNombre}
-          onSave={handleGuardarEdicion}
-          onClose={() => setEditando(null)}
-        />
-      )}
     </div>
   )
 }

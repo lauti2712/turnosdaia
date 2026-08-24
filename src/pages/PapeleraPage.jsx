@@ -9,14 +9,18 @@ import {
 import { useEspacio } from '../context/EspacioContext'
 
 const fmtMoney = (n) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(n || 0)
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n || 0)
 
 const COLECCIONES = [
   { nombre: 'alumnos', label: 'Alumno', tieneEspacio: true },
   { nombre: 'actividades', label: 'Actividad', tieneEspacio: true },
   { nombre: 'turnos', label: 'Turno', tieneEspacio: true },
   { nombre: 'movimientos', label: 'Movimiento', tieneEspacio: true },
-  { nombre: 'pagosVivi', label: 'Pago a socio', tieneEspacio: true },
   { nombre: 'espacios', label: 'Espacio', tieneEspacio: false },
 ]
 
@@ -29,7 +33,7 @@ function tiempoRestante(eliminadoTs) {
   return `${minutos}m`
 }
 
-function etiquetaFila(coleccion, item, alumnosPorId, socioNombre) {
+function etiquetaFila(coleccion, item, alumnosPorId) {
   switch (coleccion) {
     case 'alumnos':
       return `${item.apellido}, ${item.nombre}`
@@ -43,8 +47,6 @@ function etiquetaFila(coleccion, item, alumnosPorId, socioNombre) {
       const tipo = item.tipo === 'pago' ? 'Pago' : 'Ajuste'
       return `${tipo} de ${fmtMoney(item.monto)} — ${quien}`
     }
-    case 'pagosVivi':
-      return `Pago a ${socioNombre}: ${fmtMoney(item.monto)}`
     case 'espacios':
       return item.nombre
     default:
@@ -53,8 +55,7 @@ function etiquetaFila(coleccion, item, alumnosPorId, socioNombre) {
 }
 
 export default function PapeleraPage() {
-  const { espacioActualId, espacioActual } = useEspacio()
-  const socioNombre = espacioActual?.socioNombre || 'el socio'
+  const { espacioActualId } = useEspacio()
   const [alumnos, setAlumnos] = useState([])
   const [eliminadosPorColeccion, setEliminadosPorColeccion] = useState({})
 
@@ -91,7 +92,7 @@ export default function PapeleraPage() {
         id: `${nombre}-${item.id}`,
         coleccion: nombre,
         label,
-        detalle: etiquetaFila(nombre, item, alumnosPorId, socioNombre),
+        detalle: etiquetaFila(nombre, item, alumnosPorId),
         eliminadoTs: item.eliminadoTs,
         onRestaurar: () => restaurar(nombre, item.id),
       })),
