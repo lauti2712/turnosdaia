@@ -5,6 +5,14 @@ import { useEspacio } from '../context/EspacioContext'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
+const fmtMoney = (n) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n || 0)
+
 export default function MovimientoForm({ alumno, actividades = [], onGuardado }) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
@@ -20,6 +28,9 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
   }, [alumno.id])
 
   const porcentajeVivi = porcentajeViviDeAlumno(alumno, actividades)
+  const montoNum = Number(monto) || 0
+  const montoVivi = montoNum * (porcentajeVivi / 100)
+  const montoPropio = montoNum - montoVivi
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -94,10 +105,7 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
           La alumna le pagó directamente a {socioNombre} (no a mí)
         </label>
         <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
-          De este pago, {porcentajeVivi}% es de {socioNombre} y {100 - porcentajeVivi}% mío.{' '}
-          {abonadoAVivi
-            ? `Como lo cobró ella, me debe mi parte.`
-            : `Como lo cobré yo, le debo su parte — se la pago cuando quiero desde "Nuevo pago" → "A ${socioNombre}".`}
+          {fmtMoney(montoVivi)} ({porcentajeVivi}%) corresponde a {socioNombre}, {fmtMoney(montoPropio)} a mí.
         </div>
       </div>
       <div style={{ marginTop: 10 }}>
