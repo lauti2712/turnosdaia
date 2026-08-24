@@ -8,7 +8,6 @@ import {
   montoViviDePago,
   montoPropioDePago,
 } from '../data/movimientos'
-import { subscribePagosVivi } from '../data/pagosVivi'
 import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
@@ -26,7 +25,6 @@ export default function CobrosPage() {
   const [actividadesTodas, setActividadesTodas] = useState([])
   const [turnosTodos, setTurnosTodos] = useState([])
   const [movimientosTodos, setMovimientosTodos] = useState([])
-  const [pagosViviTodos, setPagosViviTodos] = useState([])
   const [seleccionadoId, setSeleccionadoId] = useState(null)
   const [modalPerfilAbierto, setModalPerfilAbierto] = useState(false)
   const [soloDeudores, setSoloDeudores] = useState(false)
@@ -39,13 +37,11 @@ export default function CobrosPage() {
   useEffect(() => subscribeActividades(setActividadesTodas), [])
   useEffect(() => subscribeTurnos(setTurnosTodos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
-  useEffect(() => subscribePagosVivi(setPagosViviTodos), [])
 
   const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
   const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
   const turnos = turnosTodos.filter((t) => t.espacioId === espacioActualId)
   const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
-  const pagosVivi = pagosViviTodos.filter((p) => p.espacioId === espacioActualId)
 
   const activos = alumnos.filter((a) => a.activo !== false)
 
@@ -67,21 +63,25 @@ export default function CobrosPage() {
   const pagosMiosDelMes = pagosDelMes.filter((m) => !m.abonadoAVivi)
   const pagosDeViviDelMes = pagosDelMes.filter((m) => m.abonadoAVivi)
 
-  // Lo que yo cobré de las alumnas (monto bruto). No se le impute nada a
-  // Vivi automáticamente acá — eso se registra aparte, cuando yo decida
-  // pagarle, desde "Nuevo pago" → "A Vivi".
+  // LO MÍO: de lo que cobré yo (bruto), cuánto de eso es en realidad de
+  // Vivi según el % de la actividad de cada alumna (no es lo que ya le
+  // pagué — eso se registra aparte desde "Nuevo pago" → "A Vivi" — sino lo
+  // que le corresponde).
   const cobradoPorMi = pagosMiosDelMes.reduce((acc, m) => acc + m.monto, 0)
-  // Lo que efectivamente le pagué a Vivi este mes (registro manual).
-  const lePagueAVivi = pagosVivi
-    .filter((p) => (p.fecha || '').startsWith(mesActual))
-    .reduce((acc, p) => acc + p.monto, 0)
-  // De lo que cobró Vivi directamente, la parte que es mía y ella me debe.
-  const mePagoVivi = pagosDeViviDelMes.reduce((acc, m) => acc + montoPropioDePago(m), 0)
-  // De lo que cobró Vivi directamente, su propia parte (lo que le quedó a ella).
-  const lePagaronAVivi = pagosDeViviDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
-  // Todo lo que le corresponde a Vivi en total (de lo que cobró ella + de lo que cobré yo).
-  const totalCobradoPorVivi = lePagaronAVivi + lePagueAVivi
+  const corresponderiaAVivi = pagosMiosDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
 
+  // VIVI: todo lo que cobró ella directamente (bruto — son las alumnas que
+  // le pagan a ella, marcadas al cargar el pago), y de eso cuánto es mío.
+  const totalCobradoPorVivi = pagosDeViviDelMes.reduce((acc, m) => acc + m.monto, 0)
+  const meCorrespondeDeVivi = pagosDeViviDelMes.reduce((acc, m) => acc + montoPropioDePago(m), 0)
+
+  // TOTALES: cuánto es de cada uno en neto este mes, sin importar quién lo
+  // cobró físicamente — es la suma de "mi parte" y "la parte de Vivi" de
+  // TODOS los pagos del mes (los míos + los de ella).
+  const totalMeCorresponde = pagosDelMes.reduce((acc, m) => acc + montoPropioDePago(m), 0)
+  const totalCorrespondeAVivi = pagosDelMes.reduce((acc, m) => acc + montoViviDePago(m), 0)
+
+  // Deuda pendiente: es un acumulado de siempre, no de este mes.
   const totalAdeudado = filasCompletas.reduce((acc, f) => acc + Math.max(f.saldo, 0), 0)
 
   const seleccionado = activos.find((a) => a.id === seleccionadoId)
@@ -118,6 +118,9 @@ export default function CobrosPage() {
         </div>
       </div>
 
+      <p className="muted" style={{ fontSize: '0.82rem', marginBottom: 4 }}>
+        Cobros de este mes — la deuda pendiente de abajo es acumulada, no solo de este mes.
+      </p>
       <div className="stats-row">
         <div className="stat-tile stat-tile-wide">
           <div className="stat-label">Lo mío</div>
@@ -129,30 +132,46 @@ export default function CobrosPage() {
               </div>
             </div>
             <div>
-              <div className="stat-split-label">Le pagué a {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(lePagueAVivi)}</div>
+              <div className="stat-split-label">Corresponde a {socioNombre}</div>
+              <div className="stat-split-value">{fmtMoney(corresponderiaAVivi)}</div>
+            </div>
+          </div>
+        </div>
+        <div
+          className="stat-tile stat-tile-wide"
+          style={{ cursor: 'pointer' }}
+          onClick={() => setModalViviAbierto(true)}
+          title={`Ver los cobros de alumnas que le pagaron a ${socioNombre} este mes`}
+        >
+          <div className="stat-label">{socioNombre}</div>
+          <div className="stat-split">
+            <div>
+              <div className="stat-split-label">Total cobrado por {socioNombre}</div>
+              <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
+            </div>
+            <div>
+              <div className="stat-split-label">Me corresponde a mí</div>
+              <div className="stat-split-value">{fmtMoney(meCorrespondeDeVivi)}</div>
             </div>
           </div>
         </div>
         <div className="stat-tile stat-tile-wide">
-          <div className="stat-label">{socioNombre}</div>
+          <div className="stat-label">Totales del mes (neto, sin importar quién cobró)</div>
           <div className="stat-split">
             <div>
-              <div className="stat-split-label">Me pagó {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(mePagoVivi)}</div>
+              <div className="stat-split-label">Me corresponde a mí</div>
+              <div className="stat-split-value" style={{ color: 'var(--success)' }}>
+                {fmtMoney(totalMeCorresponde)}
+              </div>
             </div>
             <div>
-              <div className="stat-split-label">Le pagaron a {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(lePagaronAVivi)}</div>
-            </div>
-            <div className="stat-split-total">
-              <div className="stat-split-label">Total cobrado por {socioNombre}</div>
-              <div className="stat-split-value">{fmtMoney(totalCobradoPorVivi)}</div>
+              <div className="stat-split-label">Corresponde a {socioNombre}</div>
+              <div className="stat-split-value">{fmtMoney(totalCorrespondeAVivi)}</div>
             </div>
           </div>
         </div>
         <div className="stat-tile">
-          <div className="stat-label">Pendiente por cobrar</div>
+          <div className="stat-label">Pendiente por cobrar (acumulado)</div>
           <div className="stat-value" style={{ color: 'var(--danger)' }}>
             {fmtMoney(totalAdeudado)}
           </div>

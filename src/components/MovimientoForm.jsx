@@ -91,13 +91,13 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
             checked={abonadoAVivi}
             onChange={(e) => setAbonadoAVivi(e.target.checked)}
           />
-          Abonado a {socioNombre} (lo cobró directamente)
+          La alumna le pagó directamente a {socioNombre} (no a mí)
         </label>
         <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4, marginLeft: 22 }}>
-          De este pago, {porcentajeVivi}% le corresponde a {socioNombre} según su actividad
+          De este pago, {porcentajeVivi}% es de {socioNombre} y {100 - porcentajeVivi}% mío.{' '}
           {abonadoAVivi
-            ? ' (te debe el resto).'
-            : ` — se lo pagás cuando quieras desde "Nuevo pago" → "A ${socioNombre}".`}
+            ? `Como lo cobró ella, me debe mi parte.`
+            : `Como lo cobré yo, le debo su parte — se la pago cuando quiero desde "Nuevo pago" → "A ${socioNombre}".`}
         </div>
       </div>
       <div style={{ marginTop: 10 }}>

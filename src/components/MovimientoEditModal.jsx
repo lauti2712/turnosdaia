@@ -74,7 +74,7 @@ export default function MovimientoEditModal({ movimiento, tipo, socioNombre, onS
                 checked={abonadoAVivi}
                 onChange={(e) => setAbonadoAVivi(e.target.checked)}
               />
-              Abonado a {socioNombre} (lo cobró directamente)
+              La alumna le pagó directamente a {socioNombre} (no a mí)
             </label>
           )}
 
