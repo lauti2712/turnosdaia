@@ -225,7 +225,7 @@ export default function AlumnosPage() {
                   Turno{flechaDe('turno')}
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('dias')}>
-                  Días/semana{flechaDe('dias')}
+                  Días x<br />semana{flechaDe('dias')}
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('monto')}>
                   Monto mensual{flechaDe('monto')}
@@ -281,7 +281,11 @@ export default function AlumnosPage() {
                       <button className="btn btn-sm" onClick={() => abrirEditar(a)}>
                         Editar
                       </button>
-                      <button className="btn btn-sm" onClick={() => handleArchivarClick(a)}>
+                      <button
+                        className="btn btn-sm"
+                        style={{ whiteSpace: 'nowrap' }}
+                        onClick={() => handleArchivarClick(a)}
+                      >
                         {a.activo === false ? 'Reactivar' : 'Dar de baja'}
                       </button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(a)}>

@@ -181,7 +181,12 @@ export default function AlumnoModal({
             </button>
           )}
           {alumno && onArchivarClick && (
-            <button type="button" className="btn btn-sm" onClick={() => onArchivarClick(alumno)}>
+            <button
+              type="button"
+              className="btn btn-sm"
+              style={{ whiteSpace: 'nowrap' }}
+              onClick={() => onArchivarClick(alumno)}
+            >
               {alumno.activo === false ? 'Reactivar' : 'Dar de baja'}
             </button>
           )}
