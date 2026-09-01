@@ -12,6 +12,7 @@ import CtaCteDetalle from '../components/CtaCteDetalle'
 import NuevoPagoModal from '../components/NuevoPagoModal'
 import HistorialCobrosModal from '../components/HistorialCobrosModal'
 import CuentaViviModal from '../components/CuentaViviModal'
+import CuentaPropiaModal from '../components/CuentaPropiaModal'
 import AlumnoModal from '../components/AlumnoModal'
 import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
@@ -38,6 +39,7 @@ export default function CobrosPage() {
   const [modalPagoAbierto, setModalPagoAbierto] = useState(false)
   const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false)
   const [modalViviAbierto, setModalViviAbierto] = useState(false)
+  const [modalPropiaAbierto, setModalPropiaAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
@@ -137,7 +139,12 @@ export default function CobrosPage() {
       <div className="stats-row">
         {conSocio ? (
           <>
-            <div className="stat-tile stat-tile-wide">
+            <div
+              className="stat-tile stat-tile-wide"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setModalPropiaAbierto(true)}
+              title="Ver mis cobros de este mes"
+            >
               <div className="stat-label">Lo mío</div>
               <div className="stat-split">
                 <div>
@@ -187,7 +194,12 @@ export default function CobrosPage() {
             </div>
           </>
         ) : (
-          <div className="stat-tile">
+          <div
+            className="stat-tile"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setModalPropiaAbierto(true)}
+            title="Ver mis cobros de este mes"
+          >
             <div className="stat-label">Cobrado este mes</div>
             <div className="stat-value" style={{ color: 'var(--success)' }}>
               {fmtMoney(cobradoTotalDelMes)}
@@ -291,6 +303,8 @@ export default function CobrosPage() {
       )}
 
       {conSocio && modalViviAbierto && <CuentaViviModal onClose={() => setModalViviAbierto(false)} />}
+
+      {modalPropiaAbierto && <CuentaPropiaModal onClose={() => setModalPropiaAbierto(false)} />}
     </div>
   )
 }

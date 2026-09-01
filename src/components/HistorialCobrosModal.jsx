@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { subscribeAlumnos } from '../data/alumnos'
+import { subscribeAlumnos, eventosBonificacionYTarifa } from '../data/alumnos'
 import {
   subscribeTodosMovimientos,
   eliminarMovimiento,
@@ -10,6 +10,13 @@ import MovimientoEditModal from './MovimientoEditModal'
 import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
+
+const TIPOS = [
+  { valor: 'pago', label: 'Pagos' },
+  { valor: 'ajuste', label: 'Ajustes' },
+  { valor: 'bonificacion', label: 'Bonificaciones' },
+  { valor: 'cambio_tarifa', label: 'Cambios de tarifa' },
+]
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', {
@@ -48,9 +55,16 @@ export default function HistorialCobrosModal({ onClose }) {
   const [movimientosTodos, setMovimientosTodos] = useState([])
   const [mes, setMes] = useState(mesActualId())
   const [editando, setEditando] = useState(null)
+  const [tiposVisibles, setTiposVisibles] = useState(TIPOS.map((t) => t.valor))
 
   useEffect(() => subscribeAlumnos(setAlumnos), [])
   useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
+
+  function toggleTipo(valor) {
+    setTiposVisibles((prev) =>
+      prev.includes(valor) ? prev.filter((v) => v !== valor) : [...prev, valor],
+    )
+  }
 
   async function handleGuardarEdicion(datos) {
     if (editando.tipo === 'pago') {
@@ -61,9 +75,14 @@ export default function HistorialCobrosModal({ onClose }) {
   }
 
   const alumnosPorId = Object.fromEntries(alumnos.map((a) => [a.id, a]))
+  const alumnosDelEspacio = alumnos.filter((a) => a.espacioId === espacioActualId)
   const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
+  const eventos = alumnosDelEspacio.flatMap((a) => eventosBonificacionYTarifa(a))
 
-  const delMes = movimientos.filter((m) => (m.fecha || '').startsWith(mes))
+  const delMes = [...movimientos, ...eventos]
+    .filter((m) => (m.fecha || '').startsWith(mes))
+    .filter((m) => tiposVisibles.includes(m.tipo))
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''))
   const totalPagos = delMes.filter((m) => m.tipo === 'pago').reduce((acc, m) => acc + m.monto, 0)
   const totalAjustes = delMes.filter((m) => m.tipo === 'ajuste').reduce((acc, m) => acc + m.monto, 0)
 
@@ -114,6 +133,24 @@ export default function HistorialCobrosModal({ onClose }) {
           </div>
         </div>
 
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+          {TIPOS.map((t) => (
+            <label
+              key={t.valor}
+              className="muted"
+              style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: '0.82rem' }}
+            >
+              <input
+                type="checkbox"
+                style={{ width: 'auto' }}
+                checked={tiposVisibles.includes(t.valor)}
+                onChange={() => toggleTipo(t.valor)}
+              />
+              {t.label}
+            </label>
+          ))}
+        </div>
+
         {delMes.length === 0 ? (
           <div className="empty-state">No hay movimientos en {etiquetaMes(mes)}.</div>
         ) : (
@@ -132,10 +169,46 @@ export default function HistorialCobrosModal({ onClose }) {
               <tbody>
                 {delMes.map((m) => {
                   const alumno = alumnosPorId[m.alumnoId]
+                  const nombreAlumno = alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)'
+
+                  if (m.tipo === 'bonificacion') {
+                    return (
+                      <tr key={m.id}>
+                        <td>{fmtFecha(m.fecha)}</td>
+                        <td>{nombreAlumno}</td>
+                        <td>
+                          <span className="badge badge-warning">Bonificación</span>
+                        </td>
+                        <td>{m.tipoBonif === 'porcentaje' ? `${m.valor}%` : fmtMoney(m.valor)}</td>
+                        <td className="muted">{m.motivo || ''}</td>
+                        <td></td>
+                      </tr>
+                    )
+                  }
+                  if (m.tipo === 'cambio_tarifa') {
+                    const t = m.tarifa
+                    const precioTexto =
+                      t.precioManual != null
+                        ? `${fmtMoney(t.precioManual)} (manual)`
+                        : `${t.diasPorSemana} días/semana`
+                    return (
+                      <tr key={m.id}>
+                        <td>{fmtFecha(m.fecha)}</td>
+                        <td>{nombreAlumno}</td>
+                        <td>
+                          <span className="badge badge-warning">Cambio de tarifa</span>
+                        </td>
+                        <td></td>
+                        <td className="muted">{precioTexto}</td>
+                        <td></td>
+                      </tr>
+                    )
+                  }
+
                   return (
                     <tr key={m.id}>
                       <td>{fmtFecha(m.fecha)}</td>
-                      <td>{alumno ? `${alumno.apellido}, ${alumno.nombre}` : '(alumno eliminado)'}</td>
+                      <td>{nombreAlumno}</td>
                       <td>
                         {m.tipo === 'pago' ? (
                           <span className="badge badge-success">Pago</span>

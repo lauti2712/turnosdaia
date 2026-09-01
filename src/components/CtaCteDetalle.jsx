@@ -11,7 +11,7 @@ import {
   montoPropioDePago,
 } from '../data/movimientos'
 import { montoMensualEfectivo } from '../data/actividades'
-import { bonificarMes, quitarBonificacion, DESDE_INICIAL } from '../data/alumnos'
+import { bonificarMes, quitarBonificacion, DESDE_INICIAL, eventosBonificacionYTarifa } from '../data/alumnos'
 import { mostrarSocio } from '../data/espacios'
 import MovimientoForm from './MovimientoForm'
 import MovimientoEditModal from './MovimientoEditModal'
@@ -97,6 +97,13 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
   const meses = mesesTranscurridos(alumno.fechaInicio)
   const deudaTotal = deudaGenerada(alumno, actividades)
   const pagado = movimientos.filter((m) => m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
+
+  // Bonificaciones y cambios de tarifa no son movimientos reales (no están
+  // en la colección `movimientos`), pero se muestran igual en la lista para
+  // tener el historial completo en un solo lugar, ordenado por fecha.
+  const filas = [...movimientos, ...eventosBonificacionYTarifa(alumno)].sort((a, b) =>
+    (b.fecha || '').localeCompare(a.fecha || ''),
+  )
 
   return (
     <div className={sinTarjeta ? '' : 'card'}>
@@ -248,7 +255,7 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
         <MovimientoForm alumno={alumnoConPrecio} actividades={actividades} />
       </div>
 
-      {movimientos.length === 0 ? (
+      {filas.length === 0 ? (
         <div className="empty-state">Todavía no hay movimientos registrados.</div>
       ) : (
         <div className="scroll-x">
@@ -263,46 +270,84 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
             </tr>
           </thead>
           <tbody>
-            {movimientos.map((m) => (
-              <tr key={m.id}>
-                <td>{fmtFecha(m.fecha)}</td>
-                <td>
-                  {m.tipo === 'pago' ? (
-                    <span className="badge badge-success">Pago</span>
-                  ) : (
-                    <span className="badge badge-warning">Ajuste</span>
-                  )}
-                  {conSocio && m.tipo === 'pago' && m.abonadoAVivi && (
-                    <span className="badge badge-warning" style={{ marginLeft: 4 }}>
-                      Cobró {socioNombre}
-                    </span>
-                  )}
-                </td>
-                <td>{fmtMoney(m.monto)}</td>
-                <td className="muted">
-                  {conSocio && m.tipo === 'pago' && m.abonadoAVivi ? (
-                    <>
-                      {m.porcentajeVivi ?? 0}% {socioNombre} ({fmtMoney(montoViviDePago(m))}) · propio (
-                      {fmtMoney(montoPropioDePago(m))})
-                      {(m.formaPago || m.descripcion) &&
-                        ' · ' + [m.formaPago, m.descripcion].filter(Boolean).join(' · ')}
-                    </>
-                  ) : (
-                    [m.formaPago, m.descripcion].filter(Boolean).join(' · ')
-                  )}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                    <button className="btn btn-sm" onClick={() => setEditando(m)}>
-                      Editar
-                    </button>
-                    <button className="icon-btn" onClick={() => eliminarMovimiento(m.id)}>
-                      ✕
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {filas.map((f) => {
+              if (f.tipo === 'bonificacion') {
+                return (
+                  <tr key={f.id}>
+                    <td>{etiquetaMes(f.mes)}</td>
+                    <td>
+                      <span className="badge badge-warning">Bonificación</span>
+                    </td>
+                    <td>
+                      {f.tipoBonif === 'porcentaje' ? `${f.valor}%` : fmtMoney(f.valor)}
+                    </td>
+                    <td className="muted">{f.motivo || ''}</td>
+                    <td></td>
+                  </tr>
+                )
+              }
+              if (f.tipo === 'cambio_tarifa') {
+                const t = f.tarifa
+                const precioTexto =
+                  t.precioManual != null
+                    ? `${fmtMoney(t.precioManual)} (manual)`
+                    : `${t.diasPorSemana} días/semana${
+                        actividadesPorId[t.actividadId] ? ' — ' + actividadesPorId[t.actividadId].nombre : ''
+                      }`
+                return (
+                  <tr key={f.id}>
+                    <td>{etiquetaMes(f.desde)}</td>
+                    <td>
+                      <span className="badge badge-warning">Cambio de tarifa</span>
+                    </td>
+                    <td></td>
+                    <td className="muted">Rige desde {etiquetaMes(f.desde)}: {precioTexto}</td>
+                    <td></td>
+                  </tr>
+                )
+              }
+              const m = f
+              return (
+                <tr key={m.id}>
+                  <td>{fmtFecha(m.fecha)}</td>
+                  <td>
+                    {m.tipo === 'pago' ? (
+                      <span className="badge badge-success">Pago</span>
+                    ) : (
+                      <span className="badge badge-warning">Ajuste</span>
+                    )}
+                    {conSocio && m.tipo === 'pago' && m.abonadoAVivi && (
+                      <span className="badge badge-warning" style={{ marginLeft: 4 }}>
+                        Cobró {socioNombre}
+                      </span>
+                    )}
+                  </td>
+                  <td>{fmtMoney(m.monto)}</td>
+                  <td className="muted">
+                    {conSocio && m.tipo === 'pago' && m.abonadoAVivi ? (
+                      <>
+                        {m.porcentajeVivi ?? 0}% {socioNombre} ({fmtMoney(montoViviDePago(m))}) · propio (
+                        {fmtMoney(montoPropioDePago(m))})
+                        {(m.formaPago || m.descripcion) &&
+                          ' · ' + [m.formaPago, m.descripcion].filter(Boolean).join(' · ')}
+                      </>
+                    ) : (
+                      [m.formaPago, m.descripcion].filter(Boolean).join(' · ')
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      <button className="btn btn-sm" onClick={() => setEditando(m)}>
+                        Editar
+                      </button>
+                      <button className="icon-btn" onClick={() => eliminarMovimiento(m.id)}>
+                        ✕
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         </div>

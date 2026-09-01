@@ -9,8 +9,10 @@ import {
 } from '../data/alumnos'
 import { subscribeActividades, montoMensualEfectivo } from '../data/actividades'
 import { subscribeTurnos, sincronizarAsignaciones, turnosActualesDeAlumno } from '../data/turnos'
+import { subscribeTodosMovimientos, calcularSaldo } from '../data/movimientos'
 import AlumnoModal from '../components/AlumnoModal'
 import CtaCteDetalle from '../components/CtaCteDetalle'
+import ArchivarAlumnoModal from '../components/ArchivarAlumnoModal'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
 
@@ -27,10 +29,15 @@ export default function AlumnosPage() {
   const [alumnosTodos, setAlumnosTodos] = useState([])
   const [actividadesTodas, setActividadesTodas] = useState([])
   const [turnosTodos, setTurnosTodos] = useState([])
+  const [movimientosTodos, setMovimientosTodos] = useState([])
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState(null)
   const [modalCtaCteAbierto, setModalCtaCteAbierto] = useState(false)
-  const [mostrarInactivos, setMostrarInactivos] = useState(false)
+  const [modalBajaAbierto, setModalBajaAbierto] = useState(false)
+  const [alumnoABajar, setAlumnoABajar] = useState(null)
+  const [filtroEstado, setFiltroEstado] = useState('activos')
+  const [filtroTurno, setFiltroTurno] = useState('todos')
+  const [filtroDeuda, setFiltroDeuda] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
   const [ordenColumna, setOrdenColumna] = useState('nombre')
   const [ordenAsc, setOrdenAsc] = useState(true)
@@ -38,12 +45,19 @@ export default function AlumnosPage() {
   useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
   useEffect(() => subscribeActividades(setActividadesTodas), [])
   useEffect(() => subscribeTurnos(setTurnosTodos), [])
+  useEffect(() => subscribeTodosMovimientos(setMovimientosTodos), [])
 
   const alumnos = alumnosTodos.filter((a) => a.espacioId === espacioActualId)
   const actividades = actividadesTodas.filter((a) => a.espacioId === espacioActualId)
   const turnos = turnosTodos.filter((t) => t.espacioId === espacioActualId)
+  const movimientos = movimientosTodos.filter((m) => m.espacioId === espacioActualId)
   const actividadesPorId = Object.fromEntries(actividades.map((a) => [a.id, a]))
   const turnosPorId = Object.fromEntries(turnos.map((t) => [t.id, t]))
+
+  function saldoDe(alumno) {
+    const movsAlumno = movimientos.filter((m) => m.alumnoId === alumno.id)
+    return calcularSaldo(alumno, movsAlumno, actividades)
+  }
 
   function turnoTexto(alumno) {
     // Si el alumno nunca se guardó desde la ficha nueva, alumno.turnos está
@@ -67,6 +81,7 @@ export default function AlumnosPage() {
     monto: (a) => montoMensualEfectivo(a, actividades),
     fechaInicio: (a) => a.fechaInicio || '',
     estado: (a) => (a.activo === false ? 0 : 1),
+    saldo: (a) => saldoDe(a),
   }
 
   function ordenarPor(columna) {
@@ -110,8 +125,31 @@ export default function AlumnosPage() {
     }
   }
 
+  function handleArchivarClick(alumno) {
+    if (alumno.activo === false) {
+      archivarAlumno(alumno.id, true)
+    } else {
+      setAlumnoABajar(alumno)
+      setModalBajaAbierto(true)
+    }
+  }
+
+  async function handleConfirmarBaja(fechaBaja) {
+    await archivarAlumno(alumnoABajar.id, false, fechaBaja)
+  }
+
   const visibles = alumnos
-    .filter((a) => mostrarInactivos || a.activo !== false)
+    .filter((a) => {
+      if (filtroEstado === 'activos') return a.activo !== false
+      if (filtroEstado === 'baja') return a.activo === false
+      return true
+    })
+    .filter((a) => filtroTurno !== 'sinTurno' || !turnoTexto(a))
+    .filter((a) => {
+      if (filtroDeuda === 'todos') return true
+      const saldo = saldoDe(a)
+      return filtroDeuda === 'conDeuda' ? saldo > 0 : saldo <= 0
+    })
     .filter((a) => coincideBusqueda(a, busqueda))
     .sort((x, y) => {
       const accessor = columnas[ordenColumna]
@@ -126,15 +164,20 @@ export default function AlumnosPage() {
       <div className="page-title">
         <h2>Alumnos</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              style={{ width: 'auto' }}
-              checked={mostrarInactivos}
-              onChange={(e) => setMostrarInactivos(e.target.checked)}
-            />
-            Mostrar inactivos
-          </label>
+          <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} style={{ width: 'auto' }}>
+            <option value="activos">Activos</option>
+            <option value="baja">Dados de baja</option>
+            <option value="todos">Todos los estados</option>
+          </select>
+          <select value={filtroTurno} onChange={(e) => setFiltroTurno(e.target.value)} style={{ width: 'auto' }}>
+            <option value="todos">Cualquier turno</option>
+            <option value="sinTurno">Sin turno</option>
+          </select>
+          <select value={filtroDeuda} onChange={(e) => setFiltroDeuda(e.target.value)} style={{ width: 'auto' }}>
+            <option value="todos">Cualquier saldo</option>
+            <option value="conDeuda">Con deuda</option>
+            <option value="sinDeuda">Sin deuda</option>
+          </select>
           <button className="btn btn-primary" onClick={abrirNuevo}>
             + Nuevo alumno
           </button>
@@ -180,6 +223,9 @@ export default function AlumnosPage() {
                 <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('estado')}>
                   Estado{flechaDe('estado')}
                 </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => ordenarPor('saldo')}>
+                  Saldo{flechaDe('saldo')}
+                </th>
                 <th></th>
               </tr>
             </thead>
@@ -205,20 +251,24 @@ export default function AlumnosPage() {
                   <td>{fmtFecha(a.fechaInicio)}</td>
                   <td>
                     {a.activo === false ? (
-                      <span className="badge badge-danger">Inactivo</span>
+                      <span className="badge badge-danger">
+                        Inactivo{a.fechaBaja ? ` (${fmtFecha(a.fechaBaja)})` : ''}
+                      </span>
                     ) : (
                       <span className="badge badge-success">Activo</span>
                     )}
+                  </td>
+                  <td>
+                    <span className={`badge ${saldoDe(a) > 0 ? 'badge-danger' : 'badge-success'}`}>
+                      {fmtMoney(saldoDe(a))}
+                    </span>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                       <button className="btn btn-sm" onClick={() => abrirEditar(a)}>
                         Editar
                       </button>
-                      <button
-                        className="btn btn-sm"
-                        onClick={() => archivarAlumno(a.id, a.activo === false)}
-                      >
+                      <button className="btn btn-sm" onClick={() => handleArchivarClick(a)}>
                         {a.activo === false ? 'Reactivar' : 'Archivar'}
                       </button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(a)}>
@@ -256,6 +306,14 @@ export default function AlumnosPage() {
             <CtaCteDetalle alumno={editando} actividades={actividades} sinTarjeta />
           </div>
         </div>
+      )}
+
+      {modalBajaAbierto && alumnoABajar && (
+        <ArchivarAlumnoModal
+          alumno={alumnoABajar}
+          onConfirmar={handleConfirmarBaja}
+          onClose={() => setModalBajaAbierto(false)}
+        />
       )}
     </div>
   )

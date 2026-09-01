@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { registrarPago } from '../data/movimientos'
 import { porcentajeViviDeAlumno } from '../data/actividades'
 import { mostrarSocio } from '../data/espacios'
+import { subscribeFormasPago } from '../data/formasPago'
 import { useEspacio } from '../context/EspacioContext'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
@@ -15,7 +16,7 @@ const fmtMoney = (n) =>
   }).format(n || 0)
 
 export default function MovimientoForm({ alumno, actividades = [], onGuardado }) {
-  const { espacioActual } = useEspacio()
+  const { espacioActual, espacioActualId } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const conSocio = mostrarSocio(espacioActual)
   const [monto, setMonto] = useState(alumno.montoMensual || '')
@@ -24,6 +25,10 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
   const [descripcion, setDescripcion] = useState('')
   const [abonadoAVivi, setAbonadoAVivi] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [formasPago, setFormasPago] = useState([])
+
+  useEffect(() => subscribeFormasPago(setFormasPago), [])
+  const formasPagoDelEspacio = formasPago.filter((f) => f.espacioId === espacioActualId)
 
   useEffect(() => {
     setMonto(alumno.montoMensual || '')
@@ -77,11 +82,14 @@ export default function MovimientoForm({ alumno, actividades = [], onGuardado })
         </div>
         <div className="field">
           <label>Forma de pago</label>
-          <input
-            value={formaPago}
-            onChange={(e) => setFormaPago(e.target.value)}
-            placeholder="Efectivo, transferencia..."
-          />
+          <select value={formaPago} onChange={(e) => setFormaPago(e.target.value)}>
+            <option value="">Elegir...</option>
+            {formasPagoDelEspacio.map((f) => (
+              <option key={f.id} value={f.nombre}>
+                {f.nombre}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="field" style={{ marginTop: 10 }}>

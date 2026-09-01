@@ -111,7 +111,9 @@ export function mesesTranscurridos(fechaInicio, hasta = new Date()) {
 // completo — las bonificaciones viejas sin "tipo" se tratan como 100% (el
 // comportamiento original: mes completamente perdonado).
 export function deudaGenerada(alumno, actividades) {
-  const meses = mesesTranscurridos(alumno.fechaInicio)
+  // Si está dado de baja, no se sigue devengando deuda después de ese mes.
+  const hasta = alumno.fechaBaja ? new Date(alumno.fechaBaja + 'T00:00:00') : new Date()
+  const meses = mesesTranscurridos(alumno.fechaInicio, hasta)
   if (meses === 0 || !alumno.fechaInicio) return 0
   const bonifPorMes = Object.fromEntries((alumno.bonificaciones || []).map((b) => [b.mes, b]))
   const cursor = new Date(alumno.fechaInicio + 'T00:00:00')

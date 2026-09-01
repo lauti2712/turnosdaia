@@ -114,8 +114,14 @@ export function actualizarAlumno(id, datos) {
   return updateDoc(doc(db, 'alumnos', id), normalizarAlumno(datos))
 }
 
-export function archivarAlumno(id, activo) {
-  return updateDoc(doc(db, 'alumnos', id), { activo })
+// Al dar de baja (activo:false) se guarda desde cuándo, para que la cuenta
+// corriente deje de generar deuda a partir de ese mes. Al reactivar se borra
+// la fecha, así vuelve a devengar con normalidad.
+export function archivarAlumno(id, activo, fechaBaja) {
+  return updateDoc(doc(db, 'alumnos', id), {
+    activo,
+    fechaBaja: activo ? null : fechaBaja || null,
+  })
 }
 
 // Bonifica un mes (ej. no asistió, o empezó a medio mes): reduce el cargo de
@@ -133,6 +139,35 @@ export function quitarBonificacion(id, mes, bonificacionesActuales = []) {
   return updateDoc(doc(db, 'alumnos', id), {
     bonificaciones: bonificacionesActuales.filter((b) => b.mes !== mes),
   })
+}
+
+// Bonificaciones y cambios de tarifa no son "movimientos" (no están en la
+// colección `movimientos`, son arrays del propio alumno) — se arman acá como
+// filas sintéticas para poder mostrarlos mezclados cronológicamente con los
+// pagos/ajustes reales, tanto en la cuenta corriente de cada alumno como en
+// el historial general de Cobros.
+export function eventosBonificacionYTarifa(alumno) {
+  const bonificaciones = (alumno.bonificaciones || []).map((b) => ({
+    id: `bonif-${alumno.id}-${b.mes}`,
+    tipo: 'bonificacion',
+    fecha: `${b.mes}-01`,
+    mes: b.mes,
+    tipoBonif: b.tipo || 'porcentaje',
+    valor: b.valor ?? 100,
+    motivo: b.motivo,
+    alumnoId: alumno.id,
+  }))
+  const cambiosTarifa = (alumno.historialTarifas || [])
+    .filter((t) => t.desde !== DESDE_INICIAL)
+    .map((t) => ({
+      id: `tarifa-${alumno.id}-${t.desde}`,
+      tipo: 'cambio_tarifa',
+      fecha: `${t.desde}-01`,
+      desde: t.desde,
+      tarifa: t,
+      alumnoId: alumno.id,
+    }))
+  return [...bonificaciones, ...cambiosTarifa]
 }
 
 export function eliminarAlumno(id) {

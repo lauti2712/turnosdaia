@@ -21,6 +21,7 @@ const COLECCIONES = [
   { nombre: 'actividades', label: 'Actividad', tieneEspacio: true },
   { nombre: 'turnos', label: 'Turno', tieneEspacio: true },
   { nombre: 'movimientos', label: 'Movimiento', tieneEspacio: true },
+  { nombre: 'formasPago', label: 'Forma de pago', tieneEspacio: true },
   { nombre: 'espacios', label: 'Espacio', tieneEspacio: false },
 ]
 
@@ -47,6 +48,8 @@ function etiquetaFila(coleccion, item, alumnosPorId) {
       const tipo = item.tipo === 'pago' ? 'Pago' : 'Ajuste'
       return `${tipo} de ${fmtMoney(item.monto)} — ${quien}`
     }
+    case 'formasPago':
+      return item.nombre
     case 'espacios':
       return item.nombre
     default:

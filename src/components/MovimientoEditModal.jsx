@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { subscribeFormasPago } from '../data/formasPago'
+import { useEspacio } from '../context/EspacioContext'
 
 // tipo: 'pago' | 'ajuste' — determina qué campos mostrar.
 export default function MovimientoEditModal({
@@ -9,12 +11,17 @@ export default function MovimientoEditModal({
   onSave,
   onClose,
 }) {
+  const { espacioActualId } = useEspacio()
   const [monto, setMonto] = useState(movimiento.monto)
   const [fecha, setFecha] = useState(movimiento.fecha)
   const [formaPago, setFormaPago] = useState(movimiento.formaPago || '')
   const [descripcion, setDescripcion] = useState(movimiento.descripcion || '')
   const [abonadoAVivi, setAbonadoAVivi] = useState(!!movimiento.abonadoAVivi)
   const [guardando, setGuardando] = useState(false)
+  const [formasPago, setFormasPago] = useState([])
+
+  useEffect(() => subscribeFormasPago(setFormasPago), [])
+  const formasPagoDelEspacio = formasPago.filter((f) => f.espacioId === espacioActualId)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -58,11 +65,14 @@ export default function MovimientoEditModal({
             {tipo === 'pago' && (
               <div className="field">
                 <label>Forma de pago</label>
-                <input
-                  value={formaPago}
-                  onChange={(e) => setFormaPago(e.target.value)}
-                  placeholder="Efectivo, transferencia..."
-                />
+                <select value={formaPago} onChange={(e) => setFormaPago(e.target.value)}>
+                  <option value="">Elegir...</option>
+                  {formasPagoDelEspacio.map((f) => (
+                    <option key={f.id} value={f.nombre}>
+                      {f.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
