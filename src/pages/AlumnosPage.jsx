@@ -59,13 +59,15 @@ export default function AlumnosPage() {
     return calcularSaldo(alumno, movsAlumno, actividades)
   }
 
-  function turnoTexto(alumno) {
+  function asignacionesDe(alumno) {
     // Si el alumno nunca se guardó desde la ficha nueva, alumno.turnos está
     // vacío aunque sí tenga una asignación real (hecha desde la grilla de
     // Turnos) — se reconstruye leyendo turno.dias directamente.
-    const asignaciones = alumno.turnos?.length
-      ? alumno.turnos
-      : turnosActualesDeAlumno(alumno.id, turnos)
+    return alumno.turnos?.length ? alumno.turnos : turnosActualesDeAlumno(alumno.id, turnos)
+  }
+
+  function turnoTexto(alumno) {
+    const asignaciones = asignacionesDe(alumno)
     if (!asignaciones.length) return ''
     return asignaciones
       .map((t) => turnosPorId[t.turnoId]?.nombre)
@@ -146,7 +148,11 @@ export default function AlumnosPage() {
       if (filtroEstado === 'baja') return a.activo === false
       return true
     })
-    .filter((a) => filtroTurno !== 'sinTurno' || !turnoTexto(a))
+    .filter((a) => {
+      if (filtroTurno === 'todos') return true
+      if (filtroTurno === 'sinTurno') return !turnoTexto(a)
+      return asignacionesDe(a).some((t) => t.turnoId === filtroTurno)
+    })
     .filter((a) => {
       if (filtroDeuda === 'todos') return true
       const saldo = saldoDe(a)
@@ -174,6 +180,11 @@ export default function AlumnosPage() {
           <select value={filtroTurno} onChange={(e) => setFiltroTurno(e.target.value)} style={{ width: 'auto' }}>
             <option value="todos">Cualquier turno</option>
             <option value="sinTurno">Sin turno</option>
+            {turnos.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
           </select>
           <select value={filtroDeuda} onChange={(e) => setFiltroDeuda(e.target.value)} style={{ width: 'auto' }}>
             <option value="todos">Cualquier saldo</option>
