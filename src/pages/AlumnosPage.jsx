@@ -135,7 +135,9 @@ export default function AlumnosPage() {
   }
 
   async function handleConfirmarBaja(fechaBaja) {
+    const turnosActuales = turnosActualesDeAlumno(alumnoABajar.id, turnos)
     await archivarAlumno(alumnoABajar.id, false, fechaBaja)
+    await sincronizarAsignaciones(alumnoABajar.id, turnosActuales, [])
   }
 
   const visibles = alumnos
@@ -269,7 +271,7 @@ export default function AlumnosPage() {
                         Editar
                       </button>
                       <button className="btn btn-sm" onClick={() => handleArchivarClick(a)}>
-                        {a.activo === false ? 'Reactivar' : 'Archivar'}
+                        {a.activo === false ? 'Reactivar' : 'Dar de baja'}
                       </button>
                       <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(a)}>
                         Eliminar
@@ -292,6 +294,7 @@ export default function AlumnosPage() {
           onSave={handleSave}
           onClose={() => setModalAbierto(false)}
           onVerCtaCte={() => setModalCtaCteAbierto(true)}
+          onArchivarClick={handleArchivarClick}
         />
       )}
 
@@ -303,7 +306,12 @@ export default function AlumnosPage() {
                 ✕
               </button>
             </div>
-            <CtaCteDetalle alumno={editando} actividades={actividades} sinTarjeta />
+            <CtaCteDetalle
+              alumno={editando}
+              actividades={actividades}
+              sinTarjeta
+              onArchivarClick={handleArchivarClick}
+            />
           </div>
         </div>
       )}

@@ -115,12 +115,16 @@ export function actualizarAlumno(id, datos) {
 }
 
 // Al dar de baja (activo:false) se guarda desde cuándo, para que la cuenta
-// corriente deje de generar deuda a partir de ese mes. Al reactivar se borra
-// la fecha, así vuelve a devengar con normalidad.
+// corriente deje de generar deuda a partir de ese mes, y se limpia el campo
+// `turnos` (la baja de turno.dias en sí la hace sincronizarAsignaciones, en
+// el llamador, que tiene el estado real de turnos a mano). Al reactivar se
+// borra la fecha así vuelve a devengar con normalidad — pero no se reasigna
+// ningún turno solo, hay que hacerlo a mano.
 export function archivarAlumno(id, activo, fechaBaja) {
   return updateDoc(doc(db, 'alumnos', id), {
     activo,
     fechaBaja: activo ? null : fechaBaja || null,
+    ...(activo ? {} : { turnos: [] }),
   })
 }
 

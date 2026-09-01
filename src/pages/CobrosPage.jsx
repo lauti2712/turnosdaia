@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { subscribeAlumnos, actualizarAlumno, coincideBusqueda } from '../data/alumnos'
+import { subscribeAlumnos, actualizarAlumno, archivarAlumno, coincideBusqueda } from '../data/alumnos'
 import { subscribeActividades } from '../data/actividades'
 import { subscribeTurnos, sincronizarAsignaciones, turnosActualesDeAlumno } from '../data/turnos'
 import {
@@ -14,6 +14,7 @@ import HistorialCobrosModal from '../components/HistorialCobrosModal'
 import CuentaViviModal from '../components/CuentaViviModal'
 import CuentaPropiaModal from '../components/CuentaPropiaModal'
 import AlumnoModal from '../components/AlumnoModal'
+import ArchivarAlumnoModal from '../components/ArchivarAlumnoModal'
 import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
 
@@ -40,6 +41,8 @@ export default function CobrosPage() {
   const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false)
   const [modalViviAbierto, setModalViviAbierto] = useState(false)
   const [modalPropiaAbierto, setModalPropiaAbierto] = useState(false)
+  const [modalBajaAbierto, setModalBajaAbierto] = useState(false)
+  const [alumnoABajar, setAlumnoABajar] = useState(null)
   const [busqueda, setBusqueda] = useState('')
 
   useEffect(() => subscribeAlumnos(setAlumnosTodos), [])
@@ -103,6 +106,21 @@ export default function CobrosPage() {
     const turnosAntes = turnosActualesDeAlumno(seleccionado.id, turnos)
     await actualizarAlumno(seleccionado.id, datos)
     await sincronizarAsignaciones(seleccionado.id, turnosAntes, datos.turnos)
+  }
+
+  function handleArchivarClick(alumno) {
+    if (alumno.activo === false) {
+      archivarAlumno(alumno.id, true)
+    } else {
+      setAlumnoABajar(alumno)
+      setModalBajaAbierto(true)
+    }
+  }
+
+  async function handleConfirmarBaja(fechaBaja) {
+    const turnosActuales = turnosActualesDeAlumno(alumnoABajar.id, turnos)
+    await archivarAlumno(alumnoABajar.id, false, fechaBaja)
+    await sincronizarAsignaciones(alumnoABajar.id, turnosActuales, [])
   }
 
   return (
@@ -280,6 +298,7 @@ export default function CobrosPage() {
               actividades={actividades}
               sinTarjeta
               onVerPerfil={() => setModalPerfilAbierto(true)}
+              onArchivarClick={handleArchivarClick}
             />
           </div>
         </div>
@@ -293,6 +312,15 @@ export default function CobrosPage() {
           onSave={handleGuardarPerfil}
           onClose={() => setModalPerfilAbierto(false)}
           onVerCtaCte={() => setModalPerfilAbierto(false)}
+          onArchivarClick={handleArchivarClick}
+        />
+      )}
+
+      {modalBajaAbierto && alumnoABajar && (
+        <ArchivarAlumnoModal
+          alumno={alumnoABajar}
+          onConfirmar={handleConfirmarBaja}
+          onClose={() => setModalBajaAbierto(false)}
         />
       )}
 

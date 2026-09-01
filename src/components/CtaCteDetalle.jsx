@@ -47,7 +47,13 @@ const MOTIVOS_PRESET = {
   libre: null, // se completa con el texto libre
 }
 
-export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false, onVerPerfil }) {
+export default function CtaCteDetalle({
+  alumno,
+  actividades,
+  sinTarjeta = false,
+  onVerPerfil,
+  onArchivarClick,
+}) {
   const { espacioActual } = useEspacio()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const conSocio = mostrarSocio(espacioActual)
@@ -113,6 +119,11 @@ export default function CtaCteDetalle({ alumno, actividades, sinTarjeta = false,
           {onVerPerfil && (
             <button type="button" className="btn btn-sm" onClick={onVerPerfil}>
               Ver perfil
+            </button>
+          )}
+          {onArchivarClick && (
+            <button type="button" className="btn btn-sm" onClick={() => onArchivarClick(alumno)}>
+              {alumno.activo === false ? 'Reactivar' : 'Dar de baja'}
             </button>
           )}
         </h2>

@@ -27,7 +27,15 @@ function librasEnDia(turno, dia, alumnoId) {
   return Math.max((turno.cupoMaximo || 0) - ocupados, 0)
 }
 
-export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, onClose, onVerCtaCte }) {
+export default function AlumnoModal({
+  alumno,
+  actividades,
+  turnos = [],
+  onSave,
+  onClose,
+  onVerCtaCte,
+  onArchivarClick,
+}) {
   const [form, setForm] = useState(
     alumno
       ? {
@@ -170,6 +178,11 @@ export default function AlumnoModal({ alumno, actividades, turnos = [], onSave, 
           {alumno && onVerCtaCte && (
             <button type="button" className="btn btn-sm" onClick={onVerCtaCte}>
               Ver cuenta corriente
+            </button>
+          )}
+          {alumno && onArchivarClick && (
+            <button type="button" className="btn btn-sm" onClick={() => onArchivarClick(alumno)}>
+              {alumno.activo === false ? 'Reactivar' : 'Dar de baja'}
             </button>
           )}
         </h3>
