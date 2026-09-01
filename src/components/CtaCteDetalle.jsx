@@ -5,8 +5,6 @@ import {
   actualizarMovimientoPago,
   actualizarMovimientoAjuste,
   calcularSaldo,
-  deudaGenerada,
-  mesesTranscurridos,
   montoViviDePago,
   montoPropioDePago,
 } from '../data/movimientos'
@@ -15,6 +13,7 @@ import { bonificarMes, quitarBonificacion, DESDE_INICIAL, eventosBonificacionYTa
 import { mostrarSocio } from '../data/espacios'
 import MovimientoForm from './MovimientoForm'
 import MovimientoEditModal from './MovimientoEditModal'
+import BonificacionEditModal from './BonificacionEditModal'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
 
@@ -59,6 +58,8 @@ export default function CtaCteDetalle({
   const conSocio = mostrarSocio(espacioActual)
   const [movimientos, setMovimientos] = useState([])
   const [editando, setEditando] = useState(null)
+  const [editandoBonificacion, setEditandoBonificacion] = useState(null)
+  const [modalTarifaAbierto, setModalTarifaAbierto] = useState(false)
   const [mesABonificar, setMesABonificar] = useState(mesActualId())
   const [tipoBonificacion, setTipoBonificacion] = useState('porcentaje')
   const [valorBonificacion, setValorBonificacion] = useState('100')
@@ -95,14 +96,15 @@ export default function CtaCteDetalle({
     }
   }
 
+  async function handleGuardarBonificacion(datos) {
+    await bonificarMes(alumno.id, { mes: editandoBonificacion.mes, ...datos }, bonificaciones)
+  }
+
   useEffect(() => subscribeMovimientos(alumno.id, setMovimientos), [alumno.id])
 
   const montoMensual = montoMensualEfectivo(alumno, actividades)
   const alumnoConPrecio = { ...alumno, montoMensual }
   const saldo = calcularSaldo(alumno, movimientos, actividades)
-  const meses = mesesTranscurridos(alumno.fechaInicio)
-  const deudaTotal = deudaGenerada(alumno, actividades)
-  const pagado = movimientos.filter((m) => m.tipo === 'pago').reduce((a, m) => a + m.monto, 0)
 
   // Bonificaciones y cambios de tarifa no son movimientos reales (no están
   // en la colección `movimientos`), pero se muestran igual en la lista para
@@ -133,33 +135,19 @@ export default function CtaCteDetalle({
       </div>
 
       <p className="muted" style={{ fontSize: '0.85rem', marginTop: 0 }}>
-        Cliente desde {fmtFecha(alumno.fechaInicio)} · {meses} {meses === 1 ? 'mes' : 'meses'} devengados ·
-        deuda generada {fmtMoney(deudaTotal)} · pagado {fmtMoney(pagado)}
-        {bonificaciones.length > 0 &&
-          ` · ${bonificaciones.length} ${bonificaciones.length === 1 ? 'mes bonificado' : 'meses bonificados'}`}
+        Alumno desde {fmtFecha(alumno.fechaInicio)}
+        {saldo > 0 && ` · debe ${fmtMoney(saldo)}`}
       </p>
 
       {alumno.historialTarifas?.length > 0 && (
-        <p className="muted" style={{ fontSize: '0.8rem' }}>
-          <strong>Historial de tarifa:</strong>{' '}
-          {[...alumno.historialTarifas]
-            .sort((a, b) => a.desde.localeCompare(b.desde))
-            .map((t, i) => {
-              const desdeTexto = t.desde === DESDE_INICIAL ? 'el inicio' : etiquetaMes(t.desde)
-              const precioTexto =
-                t.precioManual != null
-                  ? `${fmtMoney(t.precioManual)} (manual)`
-                  : `${t.diasPorSemana} días/semana${
-                      actividadesPorId[t.actividadId] ? ' — ' + actividadesPorId[t.actividadId].nombre : ''
-                    }`
-              return (
-                <span key={i}>
-                  {i > 0 && ' → '}
-                  Desde {desdeTexto}: {precioTexto}
-                </span>
-              )
-            })}
-        </p>
+        <button
+          type="button"
+          className="btn btn-sm"
+          style={{ marginBottom: 10 }}
+          onClick={() => setModalTarifaAbierto(true)}
+        >
+          Historial de tarifa
+        </button>
       )}
 
       <div style={{ marginBottom: 18, border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
@@ -230,36 +218,6 @@ export default function CtaCteDetalle({
           Mes {etiquetaMes(mesABonificar)}: {fmtMoney(precioMesABonificar)} · descuento{' '}
           {fmtMoney(descuentoPreview)} · quedaría pendiente {fmtMoney(pendientePreview)}
         </p>
-
-        {bonificaciones.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-            {bonificaciones
-              .slice()
-              .sort((a, b) => b.mes.localeCompare(a.mes))
-              .map((b) => {
-                const tipo = b.tipo || 'porcentaje'
-                const valor = b.valor ?? 100
-                return (
-                  <span
-                    key={b.mes}
-                    className="badge badge-warning"
-                    style={{ display: 'flex', gap: 6, alignItems: 'center' }}
-                  >
-                    {etiquetaMes(b.mes)} · {tipo === 'porcentaje' ? `${valor}%` : fmtMoney(valor)}
-                    {b.motivo && ` · ${b.motivo}`}
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      aria-label="Quitar bonificación"
-                      onClick={() => quitarBonificacion(alumno.id, b.mes, bonificaciones)}
-                    >
-                      ✕
-                    </button>
-                  </span>
-                )
-              })}
-          </div>
-        )}
       </div>
 
       <div style={{ marginBottom: 18 }}>
@@ -293,7 +251,22 @@ export default function CtaCteDetalle({
                       {f.tipoBonif === 'porcentaje' ? `${f.valor}%` : fmtMoney(f.valor)}
                     </td>
                     <td className="muted">{f.motivo || ''}</td>
-                    <td></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => setEditandoBonificacion({ mes: f.mes, tipo: f.tipoBonif, valor: f.valor, motivo: f.motivo })}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="icon-btn"
+                          onClick={() => quitarBonificacion(alumno.id, f.mes, bonificaciones)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 )
               }
@@ -373,6 +346,62 @@ export default function CtaCteDetalle({
           onSave={handleGuardarEdicion}
           onClose={() => setEditando(null)}
         />
+      )}
+
+      {editandoBonificacion && (
+        <BonificacionEditModal
+          bonificacion={editandoBonificacion}
+          onSave={handleGuardarBonificacion}
+          onClose={() => setEditandoBonificacion(null)}
+        />
+      )}
+
+      {modalTarifaAbierto && (
+        <div className="modal-overlay" onClick={() => setModalTarifaAbierto(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="page-title" style={{ marginBottom: 12 }}>
+              <h3 style={{ margin: 0 }}>Historial de tarifa</h3>
+              <button className="icon-btn" aria-label="Cerrar" onClick={() => setModalTarifaAbierto(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="scroll-x">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Desde</th>
+                    <th>Actividad</th>
+                    <th>Días/semana</th>
+                    <th>Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...alumno.historialTarifas]
+                    .sort((a, b) => a.desde.localeCompare(b.desde))
+                    .map((t, i) => {
+                      const desdeTexto = t.desde === DESDE_INICIAL ? 'El inicio' : etiquetaMes(t.desde)
+                      const precio = montoMensualEfectivo(
+                        { actividadId: t.actividadId, diasPorSemana: t.diasPorSemana, precioManual: t.precioManual },
+                        actividades,
+                        t.desde,
+                      )
+                      return (
+                        <tr key={i}>
+                          <td>{desdeTexto}</td>
+                          <td>{t.precioManual != null ? '—' : actividadesPorId[t.actividadId]?.nombre || '—'}</td>
+                          <td>{t.precioManual != null ? '—' : t.diasPorSemana}</td>
+                          <td>
+                            {fmtMoney(precio)}
+                            {t.precioManual != null && ' (manual)'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
