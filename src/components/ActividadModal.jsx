@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DIAS_PRECIO, precioVigente, mesActualId } from '../data/actividades'
 import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 const ACTIVIDAD_VACIA = { nombre: '', porcentajeVivi: 50, precios: {} }
 
@@ -48,7 +49,7 @@ export default function ActividadModal({ actividad, onSave, onClose }) {
                   value={form.nombre}
                   onChange={(e) => setCampo('nombre', e.target.value)}
                   placeholder="Pilates, Yoga..."
-                  autoFocus
+                  autoFocus={autoFocusEscritorio}
                   required
                 />
               </div>

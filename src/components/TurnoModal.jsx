@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DIAS, DIAS_LABEL, construirNombreTurno } from '../data/turnos'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 const TURNO_VACIO = { actividadId: '', horario: '', cupoMaximo: 6, diasActivos: [] }
 
@@ -50,7 +51,7 @@ export default function TurnoModal({ turno, actividades = [], onSave, onClose })
               <select
                 value={form.actividadId}
                 onChange={(e) => setCampo('actividadId', e.target.value)}
-                autoFocus
+                autoFocus={autoFocusEscritorio}
                 required
               >
                 <option value="">Elegir actividad...</option>

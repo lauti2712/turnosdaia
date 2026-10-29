@@ -64,7 +64,7 @@ export default function ActividadesPage() {
     <div>
       <div className="page-title">
         <h2>Actividades</h2>
-        <button className="btn btn-primary" onClick={abrirNueva}>
+        <button className="btn btn-primary page-primary" onClick={abrirNueva}>
           + Nueva actividad
         </button>
       </div>
@@ -86,7 +86,7 @@ export default function ActividadesPage() {
                     <span className="muted"> · {act.porcentajeVivi}% para {socioNombre}</span>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 4 }}>
+                <div className="acciones" style={{ display: 'flex', gap: 4 }}>
                   <button className="btn btn-sm" onClick={() => abrirEditar(act)}>
                     Editar
                   </button>

@@ -122,7 +122,7 @@ export default function CuentaPropiaModal({ onClose }) {
           <div className="empty-state">Todavía no cobré nada en {etiquetaMes(mes)}.</div>
         ) : (
           <div className="scroll-x">
-            <table>
+            <table className="tabla-cards">
               <thead>
                 <tr>
                   <th>Fecha</th>
@@ -141,15 +141,15 @@ export default function CuentaPropiaModal({ onClose }) {
               <tbody>
                 {filas.map((f) => (
                   <tr key={f.id}>
-                    <td>{fmtFecha(f.fecha)}</td>
-                    <td>{f.alumna}</td>
-                    <td className="muted">{f.actividad}</td>
-                    <td>{fmtMoney(f.monto)}</td>
+                    <td className="td-sin-etiqueta" style={{ fontWeight: 700 }}>{f.alumna}</td>
+                    <td data-label="Fecha">{fmtFecha(f.fecha)}</td>
+                    <td className="muted" data-label="Actividad">{f.actividad}</td>
+                    <td data-label="Monto">{fmtMoney(f.monto)}</td>
                     {conSocio && (
                       <>
-                        <td className="muted">{f.porcentaje}</td>
-                        <td>{fmtMoney(f.deSocio)}</td>
-                        <td>{fmtMoney(f.propio)}</td>
+                        <td className="muted" data-label={`% ${socioNombre}`}>{f.porcentaje}</td>
+                        <td data-label={`De ${socioNombre}`}>{fmtMoney(f.deSocio)}</td>
+                        <td data-label="Propio">{fmtMoney(f.propio)}</td>
                       </>
                     )}
                   </tr>

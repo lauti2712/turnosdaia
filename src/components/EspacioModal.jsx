@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 const ESPACIO_VACIO = { nombre: '', socioNombre: '', modoCobroSocio: 'porActividad', montoFijoSocio: '' }
 
@@ -42,7 +43,7 @@ export default function EspacioModal({ espacio, onSave, onClose }) {
                 value={form.nombre}
                 onChange={(e) => setCampo('nombre', e.target.value)}
                 placeholder="Pilates y Yoga, Centro Cultural..."
-                autoFocus
+                autoFocus={autoFocusEscritorio}
                 required
               />
             </div>

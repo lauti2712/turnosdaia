@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { montoMensualEfectivo, mesActualId } from '../data/actividades'
 import { tarifaVigente, tarifasIguales, conNuevaTarifa } from '../data/alumnos'
 import { DIAS_LABEL, turnosActualesDeAlumno } from '../data/turnos'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', {
@@ -199,7 +200,7 @@ export default function AlumnoModal({
                 <input
                   value={form.nombre}
                   onChange={(e) => setCampo('nombre', e.target.value)}
-                  autoFocus
+                  autoFocus={autoFocusEscritorio}
                 />
               </div>
               <div className="field">

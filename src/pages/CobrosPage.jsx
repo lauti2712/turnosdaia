@@ -17,6 +17,7 @@ import AlumnoModal from '../components/AlumnoModal'
 import ArchivarAlumnoModal from '../components/ArchivarAlumnoModal'
 import { mostrarSocio } from '../data/espacios'
 import { useEspacio } from '../context/EspacioContext'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', {
@@ -28,6 +29,7 @@ const fmtMoney = (n) =>
 
 export default function CobrosPage() {
   const { espacioActualId, espacioActual } = useEspacio()
+  const isMobile = useIsMobile()
   const socioNombre = espacioActual?.socioNombre || 'el socio'
   const conSocio = mostrarSocio(espacioActual)
   const [alumnosTodos, setAlumnosTodos] = useState([])
@@ -127,8 +129,8 @@ export default function CobrosPage() {
     <div>
       <div className="page-title">
         <h2>Cobros</h2>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 4, alignItems: 'center' }}>
+        <div className="page-actions" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label className="muted" style={{ fontSize: '0.85rem', display: 'flex', gap: 8, alignItems: 'center' }}>
             <input
               type="checkbox"
               style={{ width: 'auto' }}
@@ -240,6 +242,7 @@ export default function CobrosPage() {
 
       <div style={{ marginBottom: 12 }}>
         <input
+          type="search"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre o apellido..."
@@ -250,6 +253,25 @@ export default function CobrosPage() {
         {filas.length === 0 ? (
           <div className="empty-state">
             {busqueda ? 'No hay alumnos que coincidan con la búsqueda.' : 'No hay alumnos para mostrar.'}
+          </div>
+        ) : isMobile ? (
+          <div>
+            {filas.map(({ alumno, saldo }) => (
+              <button
+                type="button"
+                className="fila-cobro"
+                key={alumno.id}
+                onClick={() => setSeleccionadoId(alumno.id)}
+              >
+                <span className="fila-cobro-nombre">
+                  {alumno.apellido}, {alumno.nombre}
+                </span>
+                <span className={`badge ${saldo > 0 ? 'badge-danger' : 'badge-success'}`}>{fmtMoney(saldo)}</span>
+                <span className="chevron" aria-hidden="true">
+                  ›
+                </span>
+              </button>
+            ))}
           </div>
         ) : (
           <div className="scroll-x">
@@ -288,7 +310,7 @@ export default function CobrosPage() {
       {seleccionado && (
         <div className="modal-overlay" onClick={() => setSeleccionadoId(null)}>
           <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="modal-cerrar" style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="icon-btn" aria-label="Cerrar" onClick={() => setSeleccionadoId(null)}>
                 ✕
               </button>

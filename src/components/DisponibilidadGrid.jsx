@@ -39,7 +39,7 @@ export default function DisponibilidadGrid({ turnos }) {
   return (
     <div className="card">
       <div className="scroll-x">
-      <table>
+      <table className="tabla-compacta">
         <thead>
           <tr>
             {!isMobile && <th></th>}

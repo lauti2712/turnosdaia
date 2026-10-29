@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -48,7 +49,7 @@ export default function BonificacionEditModal({ bonificacion, onSave, onClose })
                 max={tipo === 'porcentaje' ? 100 : undefined}
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
-                autoFocus
+                autoFocus={autoFocusEscritorio}
                 required
               />
             </div>

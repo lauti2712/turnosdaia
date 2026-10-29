@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
@@ -28,7 +29,7 @@ export default function ArchivarAlumnoModal({ alumno, onConfirmar, onClose }) {
               type="date"
               value={fechaBaja}
               onChange={(e) => setFechaBaja(e.target.value)}
-              autoFocus
+              autoFocus={autoFocusEscritorio}
               required
             />
             <div className="muted" style={{ fontSize: '0.78rem', marginTop: 4 }}>

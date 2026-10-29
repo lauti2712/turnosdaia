@@ -55,7 +55,7 @@ export default function EspaciosPage() {
     <div>
       <div className="page-title">
         <h2>Espacios</h2>
-        <button className="btn btn-primary" onClick={abrirNuevo}>
+        <button className="btn btn-primary page-primary" onClick={abrirNuevo}>
           + Nuevo espacio
         </button>
       </div>
@@ -77,7 +77,7 @@ export default function EspaciosPage() {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div className="acciones" style={{ display: 'flex', gap: 4 }}>
                 {esp.id !== espacioActualId && (
                   <button className="btn btn-sm" onClick={() => setEspacioActualId(esp.id)}>
                     Usar este

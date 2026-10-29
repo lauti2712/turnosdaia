@@ -155,7 +155,7 @@ export default function HistorialCobrosModal({ onClose }) {
           <div className="empty-state">No hay movimientos en {etiquetaMes(mes)}.</div>
         ) : (
           <div className="scroll-x">
-            <table>
+            <table className="tabla-cards tabla-movs con-alumno">
               <thead>
                 <tr>
                   <th>Fecha</th>
@@ -174,13 +174,13 @@ export default function HistorialCobrosModal({ onClose }) {
                   if (m.tipo === 'bonificacion') {
                     return (
                       <tr key={m.id}>
-                        <td>{fmtFecha(m.fecha)}</td>
-                        <td>{nombreAlumno}</td>
-                        <td>
+                        <td data-label="Fecha">{fmtFecha(m.fecha)}</td>
+                        <td className="td-sin-etiqueta" style={{ fontWeight: 700 }}>{nombreAlumno}</td>
+                        <td data-label="Tipo">
                           <span className="badge badge-warning">Bonificación</span>
                         </td>
-                        <td>{m.tipoBonif === 'porcentaje' ? `${m.valor}%` : fmtMoney(m.valor)}</td>
-                        <td className="muted">{m.motivo || ''}</td>
+                        <td data-label="Monto">{m.tipoBonif === 'porcentaje' ? `${m.valor}%` : fmtMoney(m.valor)}</td>
+                        <td className="muted" data-label="Detalle">{m.motivo || ''}</td>
                         <td></td>
                       </tr>
                     )
@@ -193,13 +193,13 @@ export default function HistorialCobrosModal({ onClose }) {
                         : `${t.diasPorSemana} días/semana`
                     return (
                       <tr key={m.id}>
-                        <td>{fmtFecha(m.fecha)}</td>
-                        <td>{nombreAlumno}</td>
-                        <td>
+                        <td data-label="Fecha">{fmtFecha(m.fecha)}</td>
+                        <td className="td-sin-etiqueta" style={{ fontWeight: 700 }}>{nombreAlumno}</td>
+                        <td data-label="Tipo">
                           <span className="badge badge-warning">Cambio de tarifa</span>
                         </td>
                         <td></td>
-                        <td className="muted">{precioTexto}</td>
+                        <td className="muted" data-label="Detalle">{precioTexto}</td>
                         <td></td>
                       </tr>
                     )
@@ -207,9 +207,9 @@ export default function HistorialCobrosModal({ onClose }) {
 
                   return (
                     <tr key={m.id}>
-                      <td>{fmtFecha(m.fecha)}</td>
-                      <td>{nombreAlumno}</td>
-                      <td>
+                      <td data-label="Fecha">{fmtFecha(m.fecha)}</td>
+                      <td className="td-sin-etiqueta" style={{ fontWeight: 700 }}>{nombreAlumno}</td>
+                      <td data-label="Tipo">
                         {m.tipo === 'pago' ? (
                           <span className="badge badge-success">Pago</span>
                         ) : (
@@ -221,9 +221,9 @@ export default function HistorialCobrosModal({ onClose }) {
                           </span>
                         )}
                       </td>
-                      <td>{fmtMoney(m.monto)}</td>
-                      <td className="muted">{[m.formaPago, m.descripcion].filter(Boolean).join(' · ')}</td>
-                      <td>
+                      <td data-label="Monto">{fmtMoney(m.monto)}</td>
+                      <td className="muted" data-label="Detalle">{[m.formaPago, m.descripcion].filter(Boolean).join(' · ')}</td>
+                      <td className="td-acciones">
                         <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                           <button className="btn btn-sm" onClick={() => setEditando(m)}>
                             Editar

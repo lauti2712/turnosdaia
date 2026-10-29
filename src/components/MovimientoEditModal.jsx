@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { subscribeFormasPago } from '../data/formasPago'
 import { useEspacio } from '../context/EspacioContext'
+import { autoFocusEscritorio } from '../utils/dispositivo'
 
 // tipo: 'pago' | 'ajuste' — determina qué campos mostrar.
 export default function MovimientoEditModal({
@@ -54,7 +55,7 @@ export default function MovimientoEditModal({
                 step="0.01"
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
-                autoFocus
+                autoFocus={autoFocusEscritorio}
                 required
               />
             </div>

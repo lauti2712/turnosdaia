@@ -6,6 +6,7 @@ import ActividadesPage from './pages/ActividadesPage'
 import EspaciosPage from './pages/EspaciosPage'
 import ConfiguracionPage from './pages/ConfiguracionPage'
 import PapeleraPage from './pages/PapeleraPage'
+import TabBar from './components/TabBar'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { EspacioProvider, useEspacio } from './context/EspacioContext'
 
@@ -75,6 +76,7 @@ function AppShell() {
         <Route path="/configuracion" element={<ConfiguracionPage />} />
         <Route path="/papelera" element={<PapeleraPage />} />
       </Routes>
+      <TabBar />
     </div>
   )
 }

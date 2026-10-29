@@ -116,7 +116,7 @@ export default function CtaCteDetalle({
   return (
     <div className={sinTarjeta ? '' : 'card'}>
       <div className="page-title" style={{ marginBottom: 10 }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           {alumno.apellido}, {alumno.nombre}
           {onVerPerfil && (
             <button type="button" className="btn btn-sm" onClick={onVerPerfil}>
@@ -156,8 +156,8 @@ export default function CtaCteDetalle({
       )}
 
       <div style={{ marginBottom: 18, border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
-        <label style={{ fontSize: '0.78rem' }}>Bonificar un mes</label>
-        <form onSubmit={handleBonificar} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: 6 }}>Bonificar un mes</label>
+        <form onSubmit={handleBonificar} className="form-bonif" style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="muted" style={{ fontSize: '0.75rem' }}>
               Mes
@@ -233,7 +233,7 @@ export default function CtaCteDetalle({
         <div className="empty-state">Todavía no hay movimientos registrados.</div>
       ) : (
         <div className="scroll-x">
-        <table>
+        <table className="tabla-cards tabla-movs">
           <thead>
             <tr>
               <th>Fecha</th>
@@ -248,15 +248,15 @@ export default function CtaCteDetalle({
               if (f.tipo === 'bonificacion') {
                 return (
                   <tr key={f.id}>
-                    <td>{etiquetaMes(f.mes)}</td>
-                    <td>
+                    <td data-label="Fecha">{etiquetaMes(f.mes)}</td>
+                    <td data-label="Tipo">
                       <span className="badge badge-warning">Bonificación</span>
                     </td>
-                    <td>
+                    <td data-label="Monto">
                       {f.tipoBonif === 'porcentaje' ? `${f.valor}%` : fmtMoney(f.valor)}
                     </td>
-                    <td className="muted">{f.motivo || ''}</td>
-                    <td>
+                    <td className="muted" data-label="Detalle">{f.motivo || ''}</td>
+                    <td className="td-acciones">
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                         <button
                           className="btn btn-sm"
@@ -285,12 +285,12 @@ export default function CtaCteDetalle({
                       }`
                 return (
                   <tr key={f.id}>
-                    <td>{etiquetaMes(f.desde)}</td>
-                    <td>
+                    <td data-label="Fecha">{etiquetaMes(f.desde)}</td>
+                    <td data-label="Tipo">
                       <span className="badge badge-warning">Cambio de tarifa</span>
                     </td>
                     <td></td>
-                    <td className="muted">Rige desde {etiquetaMes(f.desde)}: {precioTexto}</td>
+                    <td className="muted" data-label="Detalle">Rige desde {etiquetaMes(f.desde)}: {precioTexto}</td>
                     <td></td>
                   </tr>
                 )
@@ -298,8 +298,8 @@ export default function CtaCteDetalle({
               const m = f
               return (
                 <tr key={m.id}>
-                  <td>{fmtFecha(m.fecha)}</td>
-                  <td>
+                  <td data-label="Fecha">{fmtFecha(m.fecha)}</td>
+                  <td data-label="Tipo">
                     {m.tipo === 'pago' ? (
                       <span className="badge badge-success">Pago</span>
                     ) : (
@@ -311,8 +311,8 @@ export default function CtaCteDetalle({
                       </span>
                     )}
                   </td>
-                  <td>{fmtMoney(m.monto)}</td>
-                  <td className="muted">
+                  <td data-label="Monto">{fmtMoney(m.monto)}</td>
+                  <td className="muted" data-label="Detalle">
                     {conSocio && m.tipo === 'pago' && m.abonadoAVivi ? (
                       <>
                         {m.porcentajeVivi ?? 0}% {socioNombre} ({fmtMoney(montoViviDePago(m))}) · propio (
@@ -324,7 +324,7 @@ export default function CtaCteDetalle({
                       [m.formaPago, m.descripcion].filter(Boolean).join(' · ')
                     )}
                   </td>
-                  <td>
+                  <td className="td-acciones">
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                       <button className="btn btn-sm" onClick={() => setEditando(m)}>
                         Editar
@@ -371,7 +371,7 @@ export default function CtaCteDetalle({
               </button>
             </div>
             <div className="scroll-x">
-              <table>
+              <table className="tabla-cards">
                 <thead>
                   <tr>
                     <th>Desde</th>
@@ -392,10 +392,10 @@ export default function CtaCteDetalle({
                       )
                       return (
                         <tr key={i}>
-                          <td>{desdeTexto}</td>
-                          <td>{t.precioManual != null ? '—' : actividadesPorId[t.actividadId]?.nombre || '—'}</td>
-                          <td>{t.precioManual != null ? '—' : t.diasPorSemana}</td>
-                          <td>
+                          <td data-label="Desde">{desdeTexto}</td>
+                          <td data-label="Actividad">{t.precioManual != null ? '—' : actividadesPorId[t.actividadId]?.nombre || '—'}</td>
+                          <td data-label="Días/semana">{t.precioManual != null ? '—' : t.diasPorSemana}</td>
+                          <td data-label="Precio">
                             {fmtMoney(precio)}
                             {t.precioManual != null && ' (manual)'}
                           </td>

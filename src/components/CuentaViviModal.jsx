@@ -116,7 +116,7 @@ export default function CuentaViviModal({ onClose }) {
           </div>
         ) : (
           <div className="scroll-x">
-            <table>
+            <table className="tabla-cards">
               <thead>
                 <tr>
                   <th>Fecha</th>
@@ -131,13 +131,13 @@ export default function CuentaViviModal({ onClose }) {
               <tbody>
                 {filas.map((f) => (
                   <tr key={f.id}>
-                    <td>{fmtFecha(f.fecha)}</td>
-                    <td>{f.alumna}</td>
-                    <td className="muted">{f.actividad}</td>
-                    <td>{fmtMoney(f.monto)}</td>
-                    <td className="muted">{f.porcentaje}</td>
-                    <td>{fmtMoney(f.deVivi)}</td>
-                    <td>{fmtMoney(f.propio)}</td>
+                    <td className="td-sin-etiqueta" style={{ fontWeight: 700 }}>{f.alumna}</td>
+                    <td data-label="Fecha">{fmtFecha(f.fecha)}</td>
+                    <td className="muted" data-label="Actividad">{f.actividad}</td>
+                    <td data-label="Monto">{fmtMoney(f.monto)}</td>
+                    <td className="muted" data-label={`% ${socioNombre}`}>{f.porcentaje}</td>
+                    <td data-label={`De ${socioNombre}`}>{fmtMoney(f.deVivi)}</td>
+                    <td data-label="Propio">{fmtMoney(f.propio)}</td>
                   </tr>
                 ))}
               </tbody>

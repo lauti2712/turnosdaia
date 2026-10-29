@@ -56,6 +56,7 @@ export default function ConfiguracionPage() {
             {formasPago.map((f) => (
               <div
                 key={f.id}
+                className="fila-config"
                 style={{
                   display: 'flex',
                   gap: 8,
@@ -96,7 +97,7 @@ export default function ConfiguracionPage() {
           </div>
         )}
 
-        <form onSubmit={handleAgregar} style={{ display: 'flex', gap: 8 }}>
+        <form onSubmit={handleAgregar} className="form-inline" style={{ display: 'flex', gap: 8 }}>
           <input
             value={nombreNueva}
             onChange={(e) => setNombreNueva(e.target.value)}

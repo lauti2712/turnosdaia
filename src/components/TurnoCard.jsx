@@ -88,7 +88,7 @@ export default function TurnoCard({
             )}
           </div>
         </button>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div className="acciones" style={{ display: 'flex', gap: 4 }}>
           <button className="btn btn-sm" onClick={() => onEditar(turno)}>
             Editar
           </button>

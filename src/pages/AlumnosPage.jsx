@@ -15,6 +15,7 @@ import CtaCteDetalle from '../components/CtaCteDetalle'
 import ArchivarAlumnoModal from '../components/ArchivarAlumnoModal'
 import { useEspacio } from '../context/EspacioContext'
 import { fmtFecha } from '../utils/fechas'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const fmtMoney = (n) =>
   new Intl.NumberFormat('es-AR', {
@@ -26,6 +27,7 @@ const fmtMoney = (n) =>
 
 export default function AlumnosPage() {
   const { espacioActualId } = useEspacio()
+  const isMobile = useIsMobile()
   const [alumnosTodos, setAlumnosTodos] = useState([])
   const [actividadesTodas, setActividadesTodas] = useState([])
   const [turnosTodos, setTurnosTodos] = useState([])
@@ -39,6 +41,7 @@ export default function AlumnosPage() {
   const [filtroTurno, setFiltroTurno] = useState('todos')
   const [filtroDeuda, setFiltroDeuda] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false)
   const [ordenColumna, setOrdenColumna] = useState('nombre')
   const [ordenAsc, setOrdenAsc] = useState(true)
 
@@ -142,6 +145,8 @@ export default function AlumnosPage() {
     await sincronizarAsignaciones(alumnoABajar.id, turnosActuales, [])
   }
 
+  const filtrosActivos = [filtroEstado !== 'activos', filtroTurno !== 'todos', filtroDeuda !== 'todos'].filter(Boolean).length
+
   const visibles = alumnos
     .filter((a) => {
       if (filtroEstado === 'activos') return a.activo !== false
@@ -171,7 +176,12 @@ export default function AlumnosPage() {
     <div>
       <div className="page-title">
         <h2>Alumnos</h2>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {isMobile ? (
+          <button className="btn btn-primary" onClick={abrirNuevo}>
+            + Nuevo
+          </button>
+        ) : (
+          <div className="page-actions" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} style={{ width: 'auto' }}>
             <option value="activos">Activos</option>
             <option value="baja">Dados de baja</option>
@@ -191,20 +201,152 @@ export default function AlumnosPage() {
             <option value="conDeuda">Con deuda</option>
             <option value="sinDeuda">Sin deuda</option>
           </select>
-          <button className="btn btn-primary" onClick={abrirNuevo}>
-            + Nuevo alumno
-          </button>
-        </div>
+            <button className="btn btn-primary" onClick={abrirNuevo}>
+              + Nuevo alumno
+            </button>
+          </div>
+        )}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
         <input
+          type="search"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre o apellido..."
         />
+        {isMobile && (
+          <button
+            type="button"
+            className={`btn${filtrosAbiertos || filtrosActivos > 0 ? ' btn-filtros-activo' : ''}`}
+            onClick={() => setFiltrosAbiertos((v) => !v)}
+            aria-expanded={filtrosAbiertos}
+            style={{ flexShrink: 0 }}
+          >
+            Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}
+          </button>
+        )}
       </div>
 
+      {isMobile && filtrosAbiertos && (
+        <div className="card panel-filtros">
+          <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} >
+            <option value="activos">Activos</option>
+            <option value="baja">Dados de baja</option>
+            <option value="todos">Todos los estados</option>
+          </select>
+          <select value={filtroTurno} onChange={(e) => setFiltroTurno(e.target.value)} >
+            <option value="todos">Cualquier turno</option>
+            <option value="sinTurno">Sin turno</option>
+            {turnos.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+          <select value={filtroDeuda} onChange={(e) => setFiltroDeuda(e.target.value)} >
+            <option value="todos">Cualquier saldo</option>
+            <option value="conDeuda">Con deuda</option>
+            <option value="sinDeuda">Sin deuda</option>
+          </select>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select
+              aria-label="Ordenar por"
+              value={ordenColumna}
+              onChange={(e) => setOrdenColumna(e.target.value)}
+            >
+              <option value="nombre">Orden: Nombre</option>
+              <option value="saldo">Orden: Saldo</option>
+              <option value="actividad">Orden: Actividad</option>
+              <option value="turno">Orden: Turno</option>
+              <option value="fechaInicio">Orden: Fecha de inicio</option>
+            </select>
+            <button
+              type="button"
+              className="btn"
+              aria-label={ordenAsc ? 'Orden ascendente' : 'Orden descendente'}
+              onClick={() => setOrdenAsc((v) => !v)}
+              style={{ flexShrink: 0, minWidth: 52 }}
+            >
+              {ordenAsc ? '▲' : '▼'}
+            </button>
+          </div>
+          {filtrosActivos > 0 && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => {
+                setFiltroEstado('activos')
+                setFiltroTurno('todos')
+                setFiltroDeuda('todos')
+              }}
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      )}
+
+      {isMobile ? (
+        visibles.length === 0 ? (
+          <div className="card">
+            <div className="empty-state">
+              {busqueda ? 'No hay alumnos que coincidan con la búsqueda.' : 'No hay alumnos cargados todavía.'}
+            </div>
+          </div>
+        ) : (
+          <div>
+            {visibles.map((a) => {
+              const saldo = saldoDe(a)
+              const actividad = actividadesPorId[a.actividadId]?.nombre
+              const turno = turnoTexto(a)
+              return (
+                <div className="alumno-card" key={a.id}>
+                  <div className="alumno-card-top">
+                    <div>
+                      <div className="alumno-card-nombre">
+                        {a.apellido}, {a.nombre}
+                      </div>
+                      <div className="alumno-card-sub">{[actividad, turno].filter(Boolean).join(' · ') || 'Sin actividad ni turno'}</div>
+                    </div>
+                    <span className={`badge ${saldo > 0 ? 'badge-danger' : 'badge-success'}`}>{fmtMoney(saldo)}</span>
+                  </div>
+                  <div className="alumno-card-meta">
+                    <span>
+                      <strong>{a.diasPorSemana}</strong> {a.diasPorSemana === 1 ? 'día' : 'días'}/sem
+                    </span>
+                    <span>
+                      <strong>{fmtMoney(montoMensualEfectivo(a, actividades))}</strong>/mes
+                      {a.precioManual != null && (
+                        <span className="badge badge-warning" style={{ marginLeft: 6 }}>
+                          Manual
+                        </span>
+                      )}
+                    </span>
+                    <span>Desde {fmtFecha(a.fechaInicio)}</span>
+                    {a.activo === false && (
+                      <span className="badge badge-danger">
+                        Inactivo{a.fechaBaja ? ` (${fmtFecha(a.fechaBaja)})` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className="alumno-card-actions">
+                    <button className="btn btn-sm" onClick={() => abrirEditar(a)}>
+                      Editar
+                    </button>
+                    <button className="btn btn-sm" onClick={() => handleArchivarClick(a)}>
+                      {a.activo === false ? 'Reactivar' : 'Dar de baja'}
+                    </button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleEliminar(a)}>
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      ) : (
       <div className="card">
         {visibles.length === 0 ? (
           <div className="empty-state">
@@ -300,6 +442,7 @@ export default function AlumnosPage() {
           </div>
         )}
       </div>
+      )}
 
       {modalAbierto && (
         <AlumnoModal
@@ -316,7 +459,7 @@ export default function AlumnosPage() {
       {modalCtaCteAbierto && editando && (
         <div className="modal-overlay" onClick={() => setModalCtaCteAbierto(false)}>
           <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="modal-cerrar" style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="icon-btn" aria-label="Cerrar" onClick={() => setModalCtaCteAbierto(false)}>
                 ✕
               </button>

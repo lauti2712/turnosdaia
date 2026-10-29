@@ -116,9 +116,9 @@ export default function PapeleraPage() {
           <div className="empty-state">No hay nada en la papelera.</div>
         </div>
       ) : (
-        <div className="card">
+        <div className="card card-tabla">
           <div className="scroll-x">
-            <table>
+            <table className="tabla-cards">
               <thead>
                 <tr>
                   <th>Tipo</th>
@@ -130,12 +130,12 @@ export default function PapeleraPage() {
               <tbody>
                 {filas.map((f) => (
                   <tr key={f.id}>
-                    <td>
+                    <td data-label="Tipo">
                       <span className="badge badge-warning">{f.label}</span>
                     </td>
-                    <td>{f.detalle}</td>
-                    <td className="muted">{tiempoRestante(f.eliminadoTs)}</td>
-                    <td>
+                    <td data-label="Detalle">{f.detalle}</td>
+                    <td className="muted" data-label="Tiempo restante">{tiempoRestante(f.eliminadoTs)}</td>
+                    <td className="td-acciones">
                       <button className="btn btn-sm" onClick={f.onRestaurar}>
                         Restaurar
                       </button>
